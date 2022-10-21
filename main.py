@@ -58,7 +58,7 @@ def warp(auto_time_warp):
 	if auto_time_warp:
 		while True:
 			time.sleep(1)
-			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), cv2.imread(resource_path(r"run_data/next_morning.png"), 0), cv2.TM_SQDIFF))
+			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), cv2.imread(resource_path(r"run_data/next_morning_gray.png"), 0), cv2.TM_SQDIFF))
 			if inf[0] <= 1000000:
 				mouse.move(inf[2][0], inf[2][1], absolute=True, duration=0)
 				mouse.click(button="left")
@@ -117,21 +117,21 @@ def checks(tip):
 				return True
 			return False
 		case "extend":
-			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), cv2.imread(resource_path(r"run_data/extend.png"), 0), cv2.TM_SQDIFF))
+			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), cv2.imread(resource_path(r"run_data/extend_orange.png"), 0), cv2.TM_SQDIFF))
 			if inf[0] <= 1000000:
 				mouse.move(inf[2][0], inf[2][1], absolute=True, duration=0)
 				mouse.click(button="left")
 				return True
 			return False
 		case "ok":
-			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), cv2.imread(resource_path(r"run_data/ok.png"), 0), cv2.TM_SQDIFF))
+			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), cv2.imread(resource_path(r"run_data/ok_orange.png"), 0), cv2.TM_SQDIFF))
 			if inf[0] <= 1000000:
 				mouse.move(inf[2][0], inf[2][1], absolute=True, duration=0)
 				mouse.click(button="left")
 				return True
 			return False
 		case "claim":
-			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), cv2.imread(resource_path(r"run_data/claim.png"), 0), cv2.TM_SQDIFF))
+			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), cv2.imread(resource_path(r"run_data/claim_green.png"), 0), cv2.TM_SQDIFF))
 			if inf[0] <= 1000000:
 				mouse.move(inf[2][0], inf[2][1], absolute=True, duration=0)
 				mouse.click(button="left")
@@ -139,9 +139,9 @@ def checks(tip):
 			return False
 		case "caughtfish":
 			img = cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY)
-			rel = cv2.minMaxLoc(cv2.matchTemplate(img, cv2.imread(resource_path(r"run_data/release.png"), 0), cv2.TM_SQDIFF))
-			disc = cv2.minMaxLoc(cv2.matchTemplate(img, cv2.imread(resource_path(r"run_data/discard.png"), 0), cv2.TM_SQDIFF))
-			keep = cv2.minMaxLoc(cv2.matchTemplate(img, cv2.imread(resource_path(r"run_data/keep.png"), 0), cv2.TM_SQDIFF))
+			rel = cv2.minMaxLoc(cv2.matchTemplate(img, cv2.imread(resource_path(r"run_data/release_gray.png"), 0), cv2.TM_SQDIFF))
+			disc = cv2.minMaxLoc(cv2.matchTemplate(img, cv2.imread(resource_path(r"run_data/discard_gray.png"), 0), cv2.TM_SQDIFF))
+			keep = cv2.minMaxLoc(cv2.matchTemplate(img, cv2.imread(resource_path(r"run_data/keep_orange.png"), 0), cv2.TM_SQDIFF))
 			if disc[0] <= 1000000:
 				mouse.move(disc[2][0], disc[2][1], absolute=True, duration=0)
 				mouse.click(button="left")
