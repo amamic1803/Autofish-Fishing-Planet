@@ -10,7 +10,6 @@ import numpy as np
 import psutil
 from PIL import ImageGrab
 
-import values
 #from scripts.send_gmail import send_gmail
 
 
@@ -24,6 +23,7 @@ def resource_path(relative_path):
 	return os.path.join(base_path, relative_path)
 
 def action(retrieve, auto_time_warp):
+	load_data()
 	while psutil.Process(os.getpid()).parent() is not None:
 		line_length = checks("lineLen")
 
@@ -53,12 +53,13 @@ def action(retrieve, auto_time_warp):
 						motions("twitching")
 
 def warp(auto_time_warp):
+	global image_next_morning_gray
 	keyboard.press_and_release("t")
 	time.sleep(3)
 	if auto_time_warp:
 		while True:
 			time.sleep(1)
-			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), cv2.imread(resource_path(r"run_data/next_morning_gray.png"), 0), cv2.TM_SQDIFF))
+			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), image_next_morning_gray, cv2.TM_SQDIFF))
 			if inf[0] <= 1000000:
 				mouse.move(inf[2][0], inf[2][1], absolute=True, duration=0)
 				mouse.click(button="left")
@@ -89,49 +90,58 @@ def motions(tip):
 			time.sleep(12)
 
 def checks(tip):
+	global full_val_low, full_val_high
+	global image_close_orange
+	global image_close_gray
+	global image_extend_orange
+	global image_ok_orange
+	global image_claim_green
+	global image_release_gray, image_discard_gray, image_keep_orange
+	global images_digits
+
 	match tip:
 		case "float-state":
 			screen_load = ImageGrab.grab().load()
 			for i in range(162, 200):
-				if (values.full_val_low[0] <= screen_load[88, i][0] <= values.full_val_high[0]) and (values.full_val_low[1] <= screen_load[88, i][1] <= values.full_val_high[1]) and (values.full_val_low[2] <= screen_load[88, i][2] <= values.full_val_high[2]):
+				if (full_val_low[0] <= screen_load[88, i][0] <= full_val_high[0]) and (full_val_low[1] <= screen_load[88, i][1] <= full_val_high[1]) and (full_val_low[2] <= screen_load[88, i][2] <= full_val_high[2]):
 					return True
 			return False
 		case "full":
 			screen_load = ImageGrab.grab().load()
 			for i in range(162, 200):
-				if (values.full_val_low[0] <= screen_load[88, i][0] <= values.full_val_high[0]) and (values.full_val_low[1] <= screen_load[88, i][1] <= values.full_val_high[1]) and (values.full_val_low[2] <= screen_load[88, i][2] <= values.full_val_high[2]):
+				if (full_val_low[0] <= screen_load[88, i][0] <= full_val_high[0]) and (full_val_low[1] <= screen_load[88, i][1] <= full_val_high[1]) and (full_val_low[2] <= screen_load[88, i][2] <= full_val_high[2]):
 					return True
 			return False
 		case "close-orange":
-			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), cv2.imread(resource_path(r"run_data/close_orange.png"), 0), cv2.TM_SQDIFF))
+			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), image_close_orange, cv2.TM_SQDIFF))
 			if inf[0] <= 1000000:
 				mouse.move(inf[2][0], inf[2][1], absolute=True, duration=0)
 				mouse.click(button="left")
 				return True
 			return False
 		case "close-gray":
-			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), cv2.imread(resource_path(r"run_data/close_gray.png"), 0), cv2.TM_SQDIFF))
+			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), image_close_gray, cv2.TM_SQDIFF))
 			if inf[0] <= 1000000:
 				mouse.move(inf[2][0], inf[2][1], absolute=True, duration=0)
 				mouse.click(button="left")
 				return True
 			return False
 		case "extend":
-			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), cv2.imread(resource_path(r"run_data/extend_orange.png"), 0), cv2.TM_SQDIFF))
+			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), image_extend_orange, cv2.TM_SQDIFF))
 			if inf[0] <= 1000000:
 				mouse.move(inf[2][0], inf[2][1], absolute=True, duration=0)
 				mouse.click(button="left")
 				return True
 			return False
 		case "ok":
-			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), cv2.imread(resource_path(r"run_data/ok_orange.png"), 0), cv2.TM_SQDIFF))
+			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), image_ok_orange, cv2.TM_SQDIFF))
 			if inf[0] <= 1000000:
 				mouse.move(inf[2][0], inf[2][1], absolute=True, duration=0)
 				mouse.click(button="left")
 				return True
 			return False
 		case "claim":
-			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), cv2.imread(resource_path(r"run_data/claim_green.png"), 0), cv2.TM_SQDIFF))
+			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), image_claim_green, cv2.TM_SQDIFF))
 			if inf[0] <= 1000000:
 				mouse.move(inf[2][0], inf[2][1], absolute=True, duration=0)
 				mouse.click(button="left")
@@ -139,9 +149,9 @@ def checks(tip):
 			return False
 		case "caughtfish":
 			img = cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY)
-			rel = cv2.minMaxLoc(cv2.matchTemplate(img, cv2.imread(resource_path(r"run_data/release_gray.png"), 0), cv2.TM_SQDIFF))
-			disc = cv2.minMaxLoc(cv2.matchTemplate(img, cv2.imread(resource_path(r"run_data/discard_gray.png"), 0), cv2.TM_SQDIFF))
-			keep = cv2.minMaxLoc(cv2.matchTemplate(img, cv2.imread(resource_path(r"run_data/keep_orange.png"), 0), cv2.TM_SQDIFF))
+			rel = cv2.minMaxLoc(cv2.matchTemplate(img, image_release_gray, cv2.TM_SQDIFF))
+			disc = cv2.minMaxLoc(cv2.matchTemplate(img, image_discard_gray, cv2.TM_SQDIFF))
+			keep = cv2.minMaxLoc(cv2.matchTemplate(img, image_keep_orange, cv2.TM_SQDIFF))
 			if disc[0] <= 1000000:
 				mouse.move(disc[2][0], disc[2][1], absolute=True, duration=0)
 				mouse.click(button="left")
@@ -178,23 +188,23 @@ def checks(tip):
 		case "lineLen":
 			cv_img = cv2.cvtColor(np.array(ImageGrab.grab(bbox=(1423, 916, 1666, 1020))), cv2.COLOR_RGB2GRAY)
 			poz_u_znam = {}
-			for z in ["", "_dark"]:
-				for i in range(10):
-					result = cv2.matchTemplate(cv_img, cv2.imread(resource_path(fr"run_data\{i}{z}.png"), 0), cv2.TM_SQDIFF)
-					pozicije = np.where(result <= 11500000)
-					pozicije_x = pozicije[1]
-					pozicije_y = pozicije[0]
-					tem = {}
-					for j in zip(pozicije_y, pozicije_x):
-						if j[1] in tem.keys():
-							tem[j[1]].append(result[j])
-						else:
-							tem[j[1]] = [result[j]]
-					for j in tem.keys():
-						if j in poz_u_znam.keys():
-							poz_u_znam[j].append((i, min(tem[j])))
-						else:
-							poz_u_znam[j] = [(i, min(tem[j]))]
+			digits_variations = len(images_digits) // 10
+			for i in range(len(images_digits)):
+				result = cv2.matchTemplate(cv_img, images_digits[i], cv2.TM_SQDIFF)
+				pozicije = np.where(result <= 11500000)
+				pozicije_x = pozicije[1]
+				pozicije_y = pozicije[0]
+				tem = {}
+				for j in zip(pozicije_y, pozicije_x):
+					if j[1] in tem.keys():
+						tem[j[1]].append(result[j])
+					else:
+						tem[j[1]] = [result[j]]
+				for j in tem.keys():
+					if j in poz_u_znam.keys():
+						poz_u_znam[j].append((i // digits_variations, min(tem[j])))
+					else:
+						poz_u_znam[j] = [(i // digits_variations, min(tem[j]))]
 			koordinate = list(poz_u_znam.keys())
 			norm_poz_u_znam = {}
 			while len(koordinate) != 0:
@@ -248,8 +258,6 @@ def start():
 		mouse.release(button="right")
 
 def ext():
-	global hot_e
-	global hot_s
 	global process_action
 
 	keyboard.unhook_all_hotkeys()
@@ -270,15 +278,87 @@ def ext():
 
 	psutil.Process(os.getpid()).kill()
 
+def load_data():
+	global bluetension_val_low, bluetension_val_high
+	bluetension_val_low = (25, 50, 170)
+	bluetension_val_high = (55, 80, 200)
 
-if __name__ == "__main__":
-	freeze_support()
+	global bluefish_val_low, bluefish_val_high
+	bluefish_val_low = (40, 40, 120)
+	bluefish_val_high = (70, 70, 170)
+
+	global full_val_low, full_val_high
+	full_val_low = (250, 185, 0)
+	full_val_high = (260, 195, 5)
+
+	global images_digits
+	images_digits = []
+	for i in range(10):
+		for j in ("", "_dark"):
+			images_digits.append(cv2.imread(resource_path(f"run_data\\{i}{j}.png"), cv2.IMREAD_GRAYSCALE))
+
+	global image_claim_green
+	image_claim_green = cv2.imread(resource_path(r"run_data/claim_green.png"), cv2.IMREAD_GRAYSCALE)
+
+	global image_close_gray
+	image_close_gray = cv2.imread(resource_path(r"run_data/close_gray.png"), cv2.IMREAD_GRAYSCALE)
+
+	global image_close_orange
+	image_close_orange = cv2.imread(resource_path(r"run_data/close_orange.png"), cv2.IMREAD_GRAYSCALE)
+
+	global image_discard_gray
+	image_discard_gray = cv2.imread(resource_path(r"run_data/discard_gray.png"), cv2.IMREAD_GRAYSCALE)
+
+	global image_extend_orange
+	image_extend_orange = cv2.imread(resource_path(r"run_data/extend_orange.png"), cv2.IMREAD_GRAYSCALE)
+
+	global image_keep_orange
+	image_keep_orange = cv2.imread(resource_path(r"run_data/keep_orange.png"), cv2.IMREAD_GRAYSCALE)
+
+	global image_next_morning_gray
+	image_next_morning_gray = cv2.imread(resource_path(r"run_data/next_morning_gray.png"), cv2.IMREAD_GRAYSCALE)
+
+	global image_ok_orange
+	image_ok_orange = cv2.imread(resource_path(r"run_data/ok_orange.png"), cv2.IMREAD_GRAYSCALE)
+
+	global image_release_gray
+	image_release_gray = cv2.imread(resource_path(r"run_data/release_gray.png"), cv2.IMREAD_GRAYSCALE)
+
+	"""
+	email_address = ""
+	email_password = ""
+	email_server = ""
+	email_ssl = True
+	email_tls = False
+	email_recipient = ""
+	
+	orangekeep_val_low = (190, 120, 50)
+	orangekeep_val_high = (245, 165, 95)
+	bluetension_val_low = (25, 50, 170)
+	bluetension_val_high = (55, 80, 200)
+	bluefish_val_low = (40, 40, 120)
+	bluefish_val_high = (70, 70, 170)
+	whitebar_val_low = (180, 0, 0)
+	whitebar_val_high = (235, 150, 150)
+	full_val_low = (250, 185, 0)
+	full_val_high = (260, 195, 5)  # (255, 190, 0)
+	
+	# bobber_val_low = (142, 8, 8)
+	# bobber_val_high = (215, 165, 165)
+	"""
+
+def main():
+	global retrieve, auto_time_warp
+
+	retrieve_types = {1: "twitching",
+	                  2: "stop-n-go",
+	                  3: "float"}
 
 	while True:
 		os.system("cls")
 		print("1. TWITCHING\n2. STOP & GO\n3. FLOAT\n\n")
 		try:
-			retrieve = values.retrieve_types[int(input("TYPE NUMBER: ").strip("."))]
+			retrieve = retrieve_types[int(input("TYPE NUMBER: ").strip("."))]
 			break
 		except ValueError:
 			print("INVALID NUMBER")
@@ -301,8 +381,8 @@ if __name__ == "__main__":
 			print("INVALID INPUT!")
 			time.sleep(2.5)
 
-	hot_s = keyboard.add_hotkey("š", start, suppress=True, trigger_on_release=True)
-	hot_e = keyboard.add_hotkey("đ", ext, suppress=True, trigger_on_release=True)
+	keyboard.add_hotkey("š", start, suppress=True, trigger_on_release=True)
+	keyboard.add_hotkey("đ", ext, suppress=True, trigger_on_release=True)
 
 	# instructions
 	os.system("cls")
@@ -316,3 +396,9 @@ if __name__ == "__main__":
 	print(f"\nTYPE: {retrieve_prt}\nAUTO TIME-WARP: {auto_time_warp_prt}\n\nPress š to start/stop\nPress đ to exit")
 
 	keyboard.wait()
+
+
+if __name__ == "__main__":
+	freeze_support()
+
+	main()
