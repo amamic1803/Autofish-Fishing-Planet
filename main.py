@@ -152,23 +152,6 @@ def action(retrieve, auto_time_warp):
 					case "empty":
 						motions("twitching")
 
-def warp(auto_time_warp):
-	global image_next_morning_gray
-	keyboard.press_and_release("t")
-	time.sleep(3)
-	if auto_time_warp:
-		while True:
-			time.sleep(1)
-			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), image_next_morning_gray, cv2.TM_SQDIFF))
-			if inf[0] <= 1000000:
-				mouse.move(inf[2][0], inf[2][1], absolute=True, duration=0)
-				mouse.click(button="left")
-				time.sleep(5)
-				break
-	else:
-		# send_gmail(my_address=values.email_address, my_password=values.email_password, my_server=values.email_server, to_address=values.email_recipient, subject="Fishing-Planet-Autofisher: Manual time-warp", body="Keepnet is full!\nAwaiting manual time-warp!", screenshot=True)
-		psutil.Process(os.getpid()).kill()
-
 def motions(tip):
 	match tip:
 		case "twitching":
@@ -335,48 +318,22 @@ def checks(tip):
 				broj = "0"
 			return int(broj)
 
-def start():
-	global process_action
-	global retrieve
-	global auto_time_warp
-
-	try:
-		alive = process_action.is_alive()
-	except (NameError, ValueError):
-		alive = False
-
-	if not alive:
-		process_action = Process(target=action, args=(retrieve, auto_time_warp))
-		process_action.start()
-
+def warp(auto_time_warp):
+	global image_next_morning_gray
+	keyboard.press_and_release("t")
+	time.sleep(3)
+	if auto_time_warp:
+		while True:
+			time.sleep(1)
+			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), image_next_morning_gray, cv2.TM_SQDIFF))
+			if inf[0] <= 1000000:
+				mouse.move(inf[2][0], inf[2][1], absolute=True, duration=0)
+				mouse.click(button="left")
+				time.sleep(5)
+				break
 	else:
-		process_action.kill()
-		process_action.join()
-		process_action.close()
-
-		mouse.release(button="left")
-		mouse.release(button="right")
-
-def ext():
-	global process_action
-
-	keyboard.unhook_all_hotkeys()
-
-	try:
-		process_action.kill()
-		process_action.join()
-		process_action.close()
-	except NameError:
-		pass
-	except ValueError:
-		pass
-
-	if mouse.is_pressed(button="left"):
-		mouse.release(button="left")
-	if mouse.is_pressed(button="right"):
-		mouse.release(button="right")
-
-	psutil.Process(os.getpid()).kill()
+		# send_gmail(my_address=values.email_address, my_password=values.email_password, my_server=values.email_server, to_address=values.email_recipient, subject="Fishing-Planet-Autofisher: Manual time-warp", body="Keepnet is full!\nAwaiting manual time-warp!", screenshot=True)
+		psutil.Process(os.getpid()).kill()
 
 def load_data():
 	global bluetension_val_low, bluetension_val_high
@@ -431,7 +388,7 @@ def load_data():
 	email_ssl = True
 	email_tls = False
 	email_recipient = ""
-	
+
 	orangekeep_val_low = (190, 120, 50)
 	orangekeep_val_high = (245, 165, 95)
 	bluetension_val_low = (25, 50, 170)
@@ -442,10 +399,53 @@ def load_data():
 	whitebar_val_high = (235, 150, 150)
 	full_val_low = (250, 185, 0)
 	full_val_high = (260, 195, 5)  # (255, 190, 0)
-	
+
 	# bobber_val_low = (142, 8, 8)
 	# bobber_val_high = (215, 165, 165)
 	"""
+
+def start():
+	global process_action
+	global retrieve
+	global auto_time_warp
+
+	try:
+		alive = process_action.is_alive()
+	except (NameError, ValueError):
+		alive = False
+
+	if not alive:
+		process_action = Process(target=action, args=(retrieve, auto_time_warp))
+		process_action.start()
+
+	else:
+		process_action.kill()
+		process_action.join()
+		process_action.close()
+
+		mouse.release(button="left")
+		mouse.release(button="right")
+
+def ext():
+	global process_action
+
+	keyboard.unhook_all_hotkeys()
+
+	try:
+		process_action.kill()
+		process_action.join()
+		process_action.close()
+	except NameError:
+		pass
+	except ValueError:
+		pass
+
+	if mouse.is_pressed(button="left"):
+		mouse.release(button="left")
+	if mouse.is_pressed(button="right"):
+		mouse.release(button="right")
+
+	psutil.Process(os.getpid()).kill()
 
 def main():
 	global retrieve, auto_time_warp
@@ -481,8 +481,8 @@ def main():
 			print("INVALID INPUT!")
 			time.sleep(2.5)
 
-	keyboard.add_hotkey("š", start, suppress=True, trigger_on_release=True)
-	keyboard.add_hotkey("đ", ext, suppress=True, trigger_on_release=True)
+	keyboard.add_hotkey("Alt+X", start, suppress=True, trigger_on_release=True)
+	keyboard.add_hotkey("Alt+Y", ext, suppress=True, trigger_on_release=True)
 
 	# instructions
 	os.system("cls")
@@ -493,7 +493,7 @@ def main():
 	else:
 		auto_time_warp_prt = "no"
 
-	print(f"\nTYPE: {retrieve_prt}\nAUTO TIME-WARP: {auto_time_warp_prt}\n\nPress š to start/stop\nPress đ to exit")
+	print(f"\nTYPE: {retrieve_prt}\nAUTO TIME-WARP: {auto_time_warp_prt}\n\nPress Alt+X to start/stop\nPress Alt+Y to exit")
 
 	keyboard.wait()
 
