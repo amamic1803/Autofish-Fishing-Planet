@@ -13,7 +13,7 @@ def main():
 	key = "DarkLord76865"
 	name = f"Autofish_{datetime.datetime.now().strftime('%Y-%m-%d_%H.%M.%S')}"
 	run_data_path = os.path.join(os.path.abspath("."), "run_data")
-	icon_path = os.path.join(os.path.abspath("."), "data\\fish_icon.ico")
+	icon_path = os.path.join(os.path.abspath("."), "run_data/fish_icon.ico")
 	upx_path = os.path.join(os.path.abspath("."), "data")
 	result_path = os.path.abspath(".")
 	work_path = "build"
@@ -25,7 +25,6 @@ def main():
 	run_list = ['main.py',
 	            '--noconfirm',
 	            '--icon', icon_path,
-	            '--add-data', f"{icon_path};{os.path.basename(os.path.dirname(icon_path))}",
 	            '--upx-dir', f"{upx_path}",
 	            '--key', f"{key}",
 	            '--name', f"{name}",

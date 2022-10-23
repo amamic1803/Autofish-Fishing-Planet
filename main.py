@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import tkinter
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
@@ -15,7 +16,8 @@ import keyboard
 import mouse
 import numpy as np
 import psutil
-from PIL import ImageGrab
+from PIL import ImageGrab, ImageTk
+from PIL import Image as ImagePIL
 
 
 def resource_path(relative_path):
@@ -435,9 +437,7 @@ def ext():
 		process_action.kill()
 		process_action.join()
 		process_action.close()
-	except NameError:
-		pass
-	except ValueError:
+	except (NameError, ValueError):
 		pass
 
 	if mouse.is_pressed(button="left"):
@@ -447,9 +447,90 @@ def ext():
 
 	psutil.Process(os.getpid()).kill()
 
+def hex_to_rgb(hex_value):
+	hex_value = hex_value.lstrip("#")
+	return tuple(int(hex_value[i:i + 2], 16) for i in (0, 2, 4))
+
+def rgb_to_bgr(rgb_value):
+	return rgb_value[2], rgb_value[1], rgb_value[0]
+
+class BackgroundImage:
+	def __init__(self, width, height):
+		self.width = width
+		self.height = height
+		self.image = np.zeros((self.height, self.width, 3), dtype="uint8")
+		self.image_tkinter = ImageTk.PhotoImage(ImagePIL.fromarray(self.image))
+
+	def generate_gradient(self, starting_color, ending_color, do_vertical=False):
+		starting_color = hex_to_rgb(starting_color)
+		ending_color = hex_to_rgb(ending_color)
+
+		gradient_range = self.height if do_vertical else self.width
+
+		for curr_index in range(gradient_range):
+			row_color = np.zeros(3, dtype="uint8")
+			for i in range(3):
+				row_color[i] = (int(round((starting_color[i] * (((gradient_range - 1) - curr_index) / (gradient_range - 1))) + (ending_color[i] * (curr_index / (gradient_range - 1))), 0)))
+
+			if do_vertical:
+				self.image[curr_index, :] = row_color
+			else:
+				self.image[:, curr_index] = row_color
+
+	def paste_image(self, img_to_paste, x_loc, y_loc):
+		x1, y1 = x_loc, y_loc
+		x2, y2 = x1 + img_to_paste.shape[1], y1 + img_to_paste.shape[0]
+
+		alpha_s = img_to_paste[:, :, 3] / 255.0
+		alpha_l = 1.0 - alpha_s
+
+		for c in range(0, 3):
+			self.image[y1:y2, x1:x2, c] = (alpha_s * img_to_paste[:, :, c] + alpha_l * self.image[y1:y2, x1:x2, c])
+
+	def add_text(self, text, text_font, text_thickness, x_loc, y_loc, x_width, y_height, color):
+		text_scale = cv2.getFontScaleFromHeight(text_font, int(round(y_height * 0.75, 0)), thickness=text_thickness)
+		text_size = cv2.getTextSize(text, text_font, text_scale, text_thickness)
+		while text_size[0][0] > x_width * 0.85:
+			text_scale -= 0.01
+			text_size = cv2.getTextSize(text, text_font, text_scale, text_thickness)
+		text_origin = (int(round((x_width - text_size[0][0]) / 2, 0)) + x_loc, int(round((y_height + text_size[0][1]) / 2, 0)) + y_loc)
+		self.image = cv2.putText(self.image, text, text_origin, text_font, text_scale, rgb_to_bgr(hex_to_rgb(color)), thickness=text_thickness, lineType=cv2.LINE_AA)
+
+	def update_tkinter_img(self):
+		self.image_tkinter = ImageTk.PhotoImage(ImagePIL.fromarray(self.image))
+
 def main():
 	global retrieve, auto_time_warp
 
+	root = tkinter.Tk()
+	root.resizable(False, False)
+	root.title("Autofish-Fishing-Planet")
+	root.iconbitmap(resource_path("run_data\\fish_icon.ico"))
+	width = 600
+	height = 300
+	root.geometry(f"{width}x{height}+{(root.winfo_screenwidth() // 2) - (width // 2)}+{(root.winfo_screenheight() // 2) - (height // 2)}")
+	root.focus_force()
+
+	background_image = BackgroundImage(width, height)
+	background_image.generate_gradient(starting_color="#008DBF", ending_color="#087E31", do_vertical=True)
+	background_image.paste_image(cv2.imread(resource_path("run_data/fish_logo.png"), cv2.IMREAD_UNCHANGED), x_loc=15, y_loc=15)
+	background_image.add_text("Autofish-Fishing-Planet", cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, text_thickness=1, x_loc=90, y_loc=0, x_width=width - 90, y_height=100, color="#ffffff")
+	background_image.add_text("START/STOP: Alt+X", cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=0, y_loc=height - 25, x_width=width, y_height=15, color="#ffffff")
+	background_image.update_tkinter_img()
+
+	background_label = tkinter.Label(root, borderwidth=0, highlightthickness=0, image=background_image.image_tkinter)
+	background_label.place(x=0, y=0, width=width, height=height)
+
+	# TODO: choose retrieve type
+	# TODO: automatic time warp
+	# TODO: sign in to gmail
+	# TODO: disable everything when started
+	# TODO: close everything when gui closed
+
+	keyboard.add_hotkey("Alt+X", start, suppress=True, trigger_on_release=True)
+
+	root.mainloop()
+	"""
 	retrieve_types = {1: "twitching",
 	                  2: "stop-n-go",
 	                  3: "float"}
@@ -481,7 +562,7 @@ def main():
 			print("INVALID INPUT!")
 			time.sleep(2.5)
 
-	keyboard.add_hotkey("Alt+X", start, suppress=True, trigger_on_release=True)
+	
 	keyboard.add_hotkey("Alt+Y", ext, suppress=True, trigger_on_release=True)
 
 	# instructions
@@ -496,6 +577,7 @@ def main():
 	print(f"\nTYPE: {retrieve_prt}\nAUTO TIME-WARP: {auto_time_warp_prt}\n\nPress Alt+X to start/stop\nPress Alt+Y to exit")
 
 	keyboard.wait()
+	"""
 
 
 if __name__ == "__main__":
