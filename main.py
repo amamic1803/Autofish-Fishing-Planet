@@ -428,25 +428,6 @@ def start():
 		mouse.release(button="left")
 		mouse.release(button="right")
 
-def ext():
-	global process_action
-
-	keyboard.unhook_all_hotkeys()
-
-	try:
-		process_action.kill()
-		process_action.join()
-		process_action.close()
-	except (NameError, ValueError):
-		pass
-
-	if mouse.is_pressed(button="left"):
-		mouse.release(button="left")
-	if mouse.is_pressed(button="right"):
-		mouse.release(button="right")
-
-	psutil.Process(os.getpid()).kill()
-
 def hex_to_rgb(hex_value):
 	hex_value = hex_value.lstrip("#")
 	return tuple(int(hex_value[i:i + 2], 16) for i in (0, 2, 4))
@@ -459,7 +440,7 @@ class BackgroundImage:
 		self.width = width
 		self.height = height
 		self.image = np.zeros((self.height, self.width, 3), dtype="uint8")
-		self.image_tkinter = ImageTk.PhotoImage(ImagePIL.fromarray(self.image))
+		self.image_tkinter = None
 
 	def generate_gradient(self, starting_color, ending_color, do_vertical=False):
 		starting_color = hex_to_rgb(starting_color)
@@ -496,40 +477,72 @@ class BackgroundImage:
 		text_origin = (int(round((x_width - text_size[0][0]) / 2, 0)) + x_loc, int(round((y_height + text_size[0][1]) / 2, 0)) + y_loc)
 		self.image = cv2.putText(self.image, text, text_origin, text_font, text_scale, rgb_to_bgr(hex_to_rgb(color)), thickness=text_thickness, lineType=cv2.LINE_AA)
 
-	def update_tkinter_img(self):
+	def generate_tkinter_img(self):
 		self.image_tkinter = ImageTk.PhotoImage(ImagePIL.fromarray(self.image))
+		del self.width
+		del self.height
+		del self.image
 
 def main():
 	global retrieve, auto_time_warp
 
+	RETRIEVE_TYPES = ["Twitching",
+	                  "Stop&Go",
+	                  "Lift&Drop",
+	                  "Straight",
+	                  "Straight & Slow",
+	                  "Popping",
+	                  "Walking",
+	                  "Float",
+	                  "Bottom"]
+
+	width = 600
+	height = 280
+
 	root = tkinter.Tk()
+	root.geometry(f"{width}x{height}+{(root.winfo_screenwidth() // 2) - (width // 2)}+{(root.winfo_screenheight() // 2) - (height // 2)}")
 	root.resizable(False, False)
 	root.title("Autofish-Fishing-Planet")
-	root.iconbitmap(resource_path("run_data\\fish_icon.ico"))
-	width = 600
-	height = 300
-	root.geometry(f"{width}x{height}+{(root.winfo_screenwidth() // 2) - (width // 2)}+{(root.winfo_screenheight() // 2) - (height // 2)}")
-	root.focus_force()
 
 	background_image = BackgroundImage(width, height)
 	background_image.generate_gradient(starting_color="#008DBF", ending_color="#087E31", do_vertical=True)
 	background_image.paste_image(cv2.imread(resource_path("run_data/fish_logo.png"), cv2.IMREAD_UNCHANGED), x_loc=15, y_loc=15)
-	background_image.add_text("Autofish-Fishing-Planet", cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, text_thickness=1, x_loc=90, y_loc=0, x_width=width - 90, y_height=100, color="#ffffff")
+	background_image.add_text("Autofish-Fishing-Planet", cv2.FONT_HERSHEY_SCRIPT_COMPLEX, text_thickness=1, x_loc=90, y_loc=0, x_width=width - 90, y_height=100, color="#ffffff")
 	background_image.add_text("START/STOP: Alt+X", cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=0, y_loc=height - 25, x_width=width, y_height=15, color="#ffffff")
-	background_image.update_tkinter_img()
+	background_image.add_text("Retrieve:", cv2.FONT_HERSHEY_SCRIPT_COMPLEX, text_thickness=1, x_loc=0, y_loc=120, x_width=175, y_height=25, color="#ffffff")
+	background_image.add_text("Night:", cv2.FONT_HERSHEY_SCRIPT_COMPLEX, text_thickness=1, x_loc=347, y_loc=120, x_width=250, y_height=25, color="#ffffff")
+	background_image.add_text("Cast length:", cv2.FONT_HERSHEY_SCRIPT_COMPLEX, text_thickness=1, x_loc=19, y_loc=160, x_width=175, y_height=25, color="#ffffff")
+	background_image.add_text("Auto time warp:", cv2.FONT_HERSHEY_SCRIPT_COMPLEX, text_thickness=1, x_loc=285, y_loc=160, x_width=250, y_height=25, color="#ffffff")
+	background_image.add_text("Rods:", cv2.FONT_HERSHEY_SCRIPT_COMPLEX, text_thickness=1, x_loc=8, y_loc=200, x_width=125, y_height=25, color="#ffffff")
+	background_image.add_text("Status e-mails:", cv2.FONT_HERSHEY_SCRIPT_COMPLEX, text_thickness=1, x_loc=265, y_loc=200, x_width=300, y_height=25, color="#ffffff")
 
+	background_image.generate_tkinter_img()
 	background_label = tkinter.Label(root, borderwidth=0, highlightthickness=0, image=background_image.image_tkinter)
 	background_label.place(x=0, y=0, width=width, height=height)
+
+	keyboard.add_hotkey("Alt+X", start, suppress=True, trigger_on_release=True)
 
 	# TODO: choose retrieve type
 	# TODO: automatic time warp
 	# TODO: sign in to gmail
 	# TODO: disable everything when started
-	# TODO: close everything when gui closed
 
-	keyboard.add_hotkey("Alt+X", start, suppress=True, trigger_on_release=True)
-
+	root.iconbitmap(resource_path("run_data\\fish_icon.ico"))  # putting at end to prevent flash while starting (adding icon draws window immediately, before all other elements are drawn)
 	root.mainloop()
+
+	# shut down everything
+	keyboard.unhook_all_hotkeys()
+	try:
+		process_action.kill()
+		process_action.join()
+		process_action.close()
+	except (NameError, ValueError):
+		pass
+	if mouse.is_pressed(button="left"):
+		mouse.release(button="left")
+	if mouse.is_pressed(button="right"):
+		mouse.release(button="right")
+
 	"""
 	retrieve_types = {1: "twitching",
 	                  2: "stop-n-go",
