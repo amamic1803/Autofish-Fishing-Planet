@@ -409,7 +409,7 @@ def load_data():
 def start():
 	global process_action
 	global retrieve
-	global auto_time_warp
+	global auto_time_warp_toggle
 
 	try:
 		alive = process_action.is_alive()
@@ -417,7 +417,7 @@ def start():
 		alive = False
 
 	if not alive:
-		process_action = Process(target=action, args=(retrieve, auto_time_warp))
+		process_action = Process(target=action, args=(retrieve, auto_time_warp_toggle))
 		process_action.start()
 
 	else:
@@ -435,6 +435,18 @@ def hex_to_rgb(hex_value):
 def rgb_to_bgr(rgb_value):
 	return rgb_value[2], rgb_value[1], rgb_value[0]
 
+def background_click(event):
+	global started
+	if not started:
+		if event.x <= 50:
+			if 120 <= event.y <= 145:
+				print("retrieve")
+			elif 160 <= event.y <= 185:
+				print("cast len")
+			elif 200 <= event.y <= 225:
+				print("rods")
+	# TODO: add behaviour when clicking any of those
+
 def toggle_btn(event, widget1, widget2, variable):
 	if not variable:
 		widget1.config(background="#2DFA09", activebackground="#2DFA09", highlightthickness=0)
@@ -449,18 +461,25 @@ def toggle_btn(event, widget1, widget2, variable):
 
 def toggle_night():
 	global night_toggle
-	night_toggle = not night_toggle
+	global started
+	if not started:
+		night_toggle = not night_toggle
 	return not night_toggle
 
 def toggle_auto_time_warp():
 	global auto_time_warp_toggle
-	auto_time_warp_toggle = not auto_time_warp_toggle
+	global started
+	if not started:
+		auto_time_warp_toggle = not auto_time_warp_toggle
 	return not auto_time_warp_toggle
 
 def toggle_status_mails():
 	global status_mails_toggle
-	status_mails_toggle = not status_mails_toggle
+	global started
+	if not started:
+		status_mails_toggle = not status_mails_toggle
 	return not status_mails_toggle
+	# TODO: add dialog to sign in to gmail
 
 class BackgroundImage:
 	def __init__(self, width, height):
@@ -468,6 +487,7 @@ class BackgroundImage:
 		self.height = height
 		self.image = np.zeros((self.height, self.width, 3), dtype="uint8")
 		self.image_tkinter = None
+		self.saved_backgrounds = []
 
 	def generate_gradient(self, starting_color, ending_color, do_vertical=False):
 		starting_color = hex_to_rgb(starting_color)
@@ -504,17 +524,23 @@ class BackgroundImage:
 		text_origin = (int(round((x_width - text_size[0][0]) / 2, 0)) + x_loc, int(round((y_height + text_size[0][1]) / 2, 0)) + y_loc)
 		self.image = cv2.putText(self.image, text, text_origin, text_font, text_scale, rgb_to_bgr(hex_to_rgb(color)), thickness=text_thickness, lineType=cv2.LINE_AA)
 
+	def save_background(self, x, y, width, height):
+		self.saved_backgrounds.append(self.image[x:x + width, y:y + height])
+
+	def clean_background(self, x, y, ind):
+		self.image[x:x + self.saved_backgrounds[ind].shape[1], y:y + self.saved_backgrounds[ind].shape[0]] = self.saved_backgrounds[ind]
+
 	def generate_tkinter_img(self):
 		self.image_tkinter = ImageTk.PhotoImage(ImagePIL.fromarray(self.image))
-		del self.width
-		del self.height
-		del self.image
 
 def main():
 	global night_toggle, auto_time_warp_toggle, status_mails_toggle
-	#global retrieve, auto_time_warp
+	global retrieve, cast_len, num_of_rods
+	global started
 
-	RETRIEVE_TYPES = ["Twitching",
+	started = False
+
+	retrieve_types = ["Twitching",
 	                  "Stop&Go",
 	                  "Lift&Drop",
 	                  "Straight",
@@ -523,6 +549,13 @@ def main():
 	                  "Walking",
 	                  "Float",
 	                  "Bottom"]
+
+	retrieve = retrieve_types[4]
+	cast_len = 100
+	num_of_rods = 1
+	night_toggle = False
+	auto_time_warp_toggle = False
+	status_mails_toggle = False
 
 	width = 600
 	height = 280
@@ -535,20 +568,29 @@ def main():
 	background_image = BackgroundImage(width, height)
 	background_image.generate_gradient(starting_color="#008DBF", ending_color="#087E31", do_vertical=True)
 	background_image.paste_image(cv2.imread(resource_path("run_data/fish_logo.png"), cv2.IMREAD_UNCHANGED), x_loc=15, y_loc=15)
+	background_image.paste_image(cv2.imread(resource_path("run_data/pencil.png"), cv2.IMREAD_UNCHANGED), x_loc=15, y_loc=126)
+	background_image.paste_image(cv2.imread(resource_path("run_data/pencil.png"), cv2.IMREAD_UNCHANGED), x_loc=15, y_loc=166)
+	background_image.paste_image(cv2.imread(resource_path("run_data/pencil.png"), cv2.IMREAD_UNCHANGED), x_loc=15, y_loc=206)
 	background_image.add_text("Autofish-Fishing-Planet", cv2.FONT_HERSHEY_SCRIPT_COMPLEX, text_thickness=1, x_loc=90, y_loc=0, x_width=width - 90, y_height=100, color="#ffffff")
 	background_image.add_text("START/STOP: Alt+X", cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=0, y_loc=height - 25, x_width=width, y_height=15, color="#ffffff")
-	background_image.add_text("Retrieve:", cv2.FONT_HERSHEY_SCRIPT_COMPLEX, text_thickness=1, x_loc=0, y_loc=120, x_width=175, y_height=25, color="#ffffff")
+	background_image.add_text("Retrieve:", cv2.FONT_HERSHEY_SCRIPT_COMPLEX, text_thickness=1, x_loc=15, y_loc=120, x_width=175, y_height=25, color="#ffffff")
 	background_image.add_text("Night:", cv2.FONT_HERSHEY_SCRIPT_COMPLEX, text_thickness=1, x_loc=347, y_loc=120, x_width=250, y_height=25, color="#ffffff")
-	background_image.add_text("Cast length:", cv2.FONT_HERSHEY_SCRIPT_COMPLEX, text_thickness=1, x_loc=19, y_loc=160, x_width=175, y_height=25, color="#ffffff")
+	background_image.add_text("Cast length:", cv2.FONT_HERSHEY_SCRIPT_COMPLEX, text_thickness=1, x_loc=34, y_loc=160, x_width=175, y_height=25, color="#ffffff")
 	background_image.add_text("Auto time warp:", cv2.FONT_HERSHEY_SCRIPT_COMPLEX, text_thickness=1, x_loc=285, y_loc=160, x_width=250, y_height=25, color="#ffffff")
-	background_image.add_text("Rods:", cv2.FONT_HERSHEY_SCRIPT_COMPLEX, text_thickness=1, x_loc=8, y_loc=200, x_width=125, y_height=25, color="#ffffff")
+	background_image.add_text("Rods:", cv2.FONT_HERSHEY_SCRIPT_COMPLEX, text_thickness=1, x_loc=23, y_loc=200, x_width=125, y_height=25, color="#ffffff")
 	background_image.add_text("Status e-mails:", cv2.FONT_HERSHEY_SCRIPT_COMPLEX, text_thickness=1, x_loc=265, y_loc=200, x_width=300, y_height=25, color="#ffffff")
+
+	background_image.save_background(x=150, y=127, width=175, height=16)
+	background_image.add_text(retrieve, cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=150, y_loc=127, x_width=175, y_height=16, color="#000000")
+	background_image.save_background(x=200, y=167, width=75, height=16)
+	background_image.add_text(f"{cast_len} %", cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=200, y_loc=167, x_width=75, y_height=16, color="#000000")
+	background_image.save_background(x=220, y=207, width=35, height=16)
+	background_image.add_text(str(num_of_rods), cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=220, y_loc=207, x_width=35, y_height=16, color="#000000")
 
 	background_image.generate_tkinter_img()
 	background_label = tkinter.Label(root, borderwidth=0, highlightthickness=0, image=background_image.image_tkinter)
 	background_label.place(x=0, y=0, width=width, height=height)
 
-	night_toggle = False
 	night_toggle_1 = tkinter.Label(root, borderwidth=0,
 	                               highlightthickness=2, highlightcolor="#000000", highlightbackground="#000000",
 	                               background="red", activebackground="red")
@@ -560,7 +602,6 @@ def main():
 	night_toggle_1.place(x=525, width=25, y=123, height=25)
 	night_toggle_2.place(x=550, width=25, y=128, height=15)
 
-	auto_time_warp_toggle = False
 	auto_time_warp_toggle_1 = tkinter.Label(root, borderwidth=0,
 	                                        highlightthickness=2, highlightcolor="#000000", highlightbackground="#000000",
 	                                        background="red", activebackground="red")
@@ -572,7 +613,6 @@ def main():
 	auto_time_warp_toggle_1.place(x=525, width=25, y=163, height=25)
 	auto_time_warp_toggle_2.place(x=550, width=25, y=168, height=15)
 
-	status_mails_toggle = False
 	status_mails_toggle_1 = tkinter.Label(root, borderwidth=0,
 	                                      highlightthickness=2, highlightcolor="#000000", highlightbackground="#000000",
 	                                      background="red", activebackground="red")
@@ -586,10 +626,7 @@ def main():
 
 	keyboard.add_hotkey("Alt+X", start, suppress=True, trigger_on_release=True)
 
-	# TODO: choose retrieve type
-	# TODO: automatic time warp
-	# TODO: sign in to gmail
-	# TODO: disable everything when started
+	background_label.bind("<ButtonRelease-1>", background_click)
 
 	root.iconbitmap(resource_path("run_data\\fish_icon.ico"))  # putting at end to prevent flash while starting (adding icon draws window immediately, before all other elements are drawn)
 	root.mainloop()
