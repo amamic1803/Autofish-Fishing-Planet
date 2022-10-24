@@ -435,6 +435,33 @@ def hex_to_rgb(hex_value):
 def rgb_to_bgr(rgb_value):
 	return rgb_value[2], rgb_value[1], rgb_value[0]
 
+def toggle_btn(event, widget1, widget2, variable):
+	if not variable:
+		widget1.config(background="#2DFA09", activebackground="#2DFA09", highlightthickness=0)
+		widget2.config(background="#2DFA09", activebackground="#2DFA09", highlightthickness=2)
+		widget1.place_configure(y=widget1.winfo_y() + 5, height=widget1.winfo_height() - 10)
+		widget2.place_configure(y=widget2.winfo_y() - 5, height=widget2.winfo_height() + 10)
+	else:
+		widget1.config(background="red", activebackground="red", highlightthickness=2)
+		widget2.config(background="red", activebackground="red", highlightthickness=0)
+		widget1.place_configure(y=widget1.winfo_y() - 5, height=widget1.winfo_height() + 10)
+		widget2.place_configure(y=widget2.winfo_y() + 5, height=widget2.winfo_height() - 10)
+
+def toggle_night():
+	global night_toggle
+	night_toggle = not night_toggle
+	return not night_toggle
+
+def toggle_auto_time_warp():
+	global auto_time_warp_toggle
+	auto_time_warp_toggle = not auto_time_warp_toggle
+	return not auto_time_warp_toggle
+
+def toggle_status_mails():
+	global status_mails_toggle
+	status_mails_toggle = not status_mails_toggle
+	return not status_mails_toggle
+
 class BackgroundImage:
 	def __init__(self, width, height):
 		self.width = width
@@ -484,7 +511,8 @@ class BackgroundImage:
 		del self.image
 
 def main():
-	global retrieve, auto_time_warp
+	global night_toggle, auto_time_warp_toggle, status_mails_toggle
+	#global retrieve, auto_time_warp
 
 	RETRIEVE_TYPES = ["Twitching",
 	                  "Stop&Go",
@@ -519,6 +547,42 @@ def main():
 	background_image.generate_tkinter_img()
 	background_label = tkinter.Label(root, borderwidth=0, highlightthickness=0, image=background_image.image_tkinter)
 	background_label.place(x=0, y=0, width=width, height=height)
+
+	night_toggle = False
+	night_toggle_1 = tkinter.Label(root, borderwidth=0,
+	                               highlightthickness=2, highlightcolor="#000000", highlightbackground="#000000",
+	                               background="red", activebackground="red")
+	night_toggle_2 = tkinter.Label(root, highlightthickness=0, borderwidth=0,
+	                               highlightcolor="#000000", highlightbackground="#000000",
+	                               background="red", activebackground="red")
+	night_toggle_1.bind("<ButtonRelease-1>", lambda event: toggle_btn(event, night_toggle_1, night_toggle_2, toggle_night()))
+	night_toggle_2.bind("<ButtonRelease-1>", lambda event: toggle_btn(event, night_toggle_1, night_toggle_2, toggle_night()))
+	night_toggle_1.place(x=525, width=25, y=123, height=25)
+	night_toggle_2.place(x=550, width=25, y=128, height=15)
+
+	auto_time_warp_toggle = False
+	auto_time_warp_toggle_1 = tkinter.Label(root, borderwidth=0,
+	                                        highlightthickness=2, highlightcolor="#000000", highlightbackground="#000000",
+	                                        background="red", activebackground="red")
+	auto_time_warp_toggle_2 = tkinter.Label(root, highlightthickness=0, borderwidth=0,
+	                                        highlightcolor="#000000", highlightbackground="#000000",
+	                                        background="red", activebackground="red")
+	auto_time_warp_toggle_1.bind("<ButtonRelease-1>", lambda event: toggle_btn(event, auto_time_warp_toggle_1, auto_time_warp_toggle_2, toggle_auto_time_warp()))
+	auto_time_warp_toggle_2.bind("<ButtonRelease-1>", lambda event: toggle_btn(event, auto_time_warp_toggle_1, auto_time_warp_toggle_2, toggle_auto_time_warp()))
+	auto_time_warp_toggle_1.place(x=525, width=25, y=163, height=25)
+	auto_time_warp_toggle_2.place(x=550, width=25, y=168, height=15)
+
+	status_mails_toggle = False
+	status_mails_toggle_1 = tkinter.Label(root, borderwidth=0,
+	                                      highlightthickness=2, highlightcolor="#000000", highlightbackground="#000000",
+	                                      background="red", activebackground="red")
+	status_mails_toggle_2 = tkinter.Label(root, highlightthickness=0, borderwidth=0,
+	                                      highlightcolor="#000000", highlightbackground="#000000",
+	                                      background="red", activebackground="red")
+	status_mails_toggle_1.bind("<ButtonRelease-1>", lambda event: toggle_btn(event, status_mails_toggle_1, status_mails_toggle_2, toggle_status_mails()))
+	status_mails_toggle_2.bind("<ButtonRelease-1>", lambda event: toggle_btn(event, status_mails_toggle_1, status_mails_toggle_2, toggle_status_mails()))
+	status_mails_toggle_1.place(x=525, width=25, y=203, height=25)
+	status_mails_toggle_2.place(x=550, width=25, y=208, height=15)
 
 	keyboard.add_hotkey("Alt+X", start, suppress=True, trigger_on_release=True)
 
