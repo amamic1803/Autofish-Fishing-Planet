@@ -449,19 +449,123 @@ def background_click(event):
 			if 115 <= event.y <= 150:
 				retrieve_select()
 			elif 155 <= event.y <= 190:
-				print("cast len")
+				print("cast len")  # start(blue) 38A0B2, end(yellow) B9B63D
 			elif 195 <= event.y <= 230:
-				print("rods")
+				rods_select()
 		if event.x >= 505:
 			if 115 <= event.y <= 150:
-				toggle_btn(None, night_toggle_1, night_toggle_2, toggle_night())
+				toggle_btn(night_toggle_1, night_toggle_2, toggle_night())
 			elif 155 <= event.y <= 190:
-				toggle_btn(None, auto_time_warp_toggle_1, auto_time_warp_toggle_2, toggle_auto_time_warp())
+				toggle_btn(auto_time_warp_toggle_1, auto_time_warp_toggle_2, toggle_auto_time_warp())
 			elif 195 <= event.y <= 230:
-				toggle_btn(None, status_mails_toggle_1, status_mails_toggle_2, toggle_status_mails())
+				toggle_btn(status_mails_toggle_1, status_mails_toggle_2, toggle_status_mails())
 	# TODO: add behaviour when clicking any of those
 
-def toggle_btn(event, widget1, widget2, variable):
+def retrieve_select():
+	global retrieve_types, root, started, hotkey
+	if not started:
+		keyboard.unhook_all_hotkeys()
+
+		option_height = 30
+
+		width = 250
+		height = option_height * len(retrieve_types)
+
+		background_image = BackgroundImage(width=width, height=height)
+		wood_texture = cv2.imread(resource_path("run_data\\wood_texture.png"), cv2.IMREAD_UNCHANGED)
+		pasted_height = 0
+		while pasted_height < height:
+			if height - (pasted_height + wood_texture.shape[0]) < 0:
+				wood_texture = wood_texture[:height - pasted_height, :]
+			background_image.paste_image(wood_texture, x_loc=0, y_loc=pasted_height)
+			pasted_height += wood_texture.shape[0]
+		del wood_texture
+
+		for i in range(len(retrieve_types)):
+			background_image.add_text(retrieve_types[i], cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=0, y_loc=(i * option_height) + (option_height // 3) // 2, x_width=width, y_height=(2 * option_height) // 3, color="#ffffff")
+
+		background_image.generate_tkinter_img()
+
+		select_window = tkinter.Toplevel(root)
+		select_window.title("Select retrieve!")
+		select_window.geometry(f"{width}x{height}+{(root.winfo_screenwidth() // 2) - (width // 2)}+{(root.winfo_screenheight() // 2) - (height // 2)}")
+		select_window.resizable(False, False)
+		select_window.grab_set()
+		select_window.focus()
+
+		background_lbl = tkinter.Label(select_window, highlightthickness=0, borderwidth=0, image=background_image.image_tkinter)
+		background_lbl.place(x=0, y=0, width=width, height=height)
+		background_lbl.bind("<ButtonRelease-1>", lambda event: retrieve_select_click(event, option_height, retrieve_types, select_window))
+
+		select_window.iconbitmap(resource_path("run_data\\fish_icon.ico"))
+		select_window.wait_window()
+		keyboard.add_hotkey(hotkey, start, suppress=True, trigger_on_release=True)
+
+def retrieve_select_click(event, option_height, retrieve_types, toplevel_win):
+	global retrieve
+	global background_image, background_label
+	retrieve = retrieve_types[event.y // option_height]
+	toplevel_win.destroy()
+	background_image.clean_background(x=150, y=120, ind=0)
+	background_image.add_text(retrieve, cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=150, y_loc=127, x_width=175, y_height=16, color="#000000")
+	background_image.generate_tkinter_img()
+	background_label.configure(image=background_image.image_tkinter)
+
+def rods_select():
+	global root, started, hotkey
+	if not started:
+		keyboard.unhook_all_hotkeys()
+
+		width = 250
+		height = 30
+		rods = 7
+
+		background_image = BackgroundImage(width=width, height=height)
+		wood_texture = cv2.imread(resource_path("run_data\\wood_texture.png"), cv2.IMREAD_UNCHANGED)
+		pasted_height = 0
+		while pasted_height < height:
+			if height - (pasted_height + wood_texture.shape[0]) < 0:
+				wood_texture = wood_texture[:height - pasted_height, :]
+			background_image.paste_image(wood_texture, x_loc=0, y_loc=pasted_height)
+			pasted_height += wood_texture.shape[0]
+		del wood_texture
+
+		for i in range(1, rods + 1):
+			background_image.add_text(str(i), cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=(((width - (height * rods)) // 2) + ((i - 1) * height)), y_loc=((height // 3) // 2),  x_width=height, y_height=(2 * height) // 3, color="#ffffff")
+
+		background_image.generate_tkinter_img()
+
+		select_window = tkinter.Toplevel(root)
+		select_window.title("Select rods!")
+		select_window.geometry(f"{width}x{height}+{(root.winfo_screenwidth() // 2) - (width // 2)}+{(root.winfo_screenheight() // 2) - (height // 2)}")
+		select_window.resizable(False, False)
+		select_window.grab_set()
+		select_window.focus()
+
+		background_lbl = tkinter.Label(select_window, highlightthickness=0, borderwidth=0, image=background_image.image_tkinter)
+		background_lbl.place(x=0, y=0, width=width, height=height)
+		background_lbl.bind("<ButtonRelease-1>", lambda event: rods_select_click(event, rods, ((width - (height * rods)) // 2), height, select_window))
+
+		select_window.iconbitmap(resource_path("run_data\\fish_icon.ico"))
+		select_window.wait_window()
+		keyboard.add_hotkey(hotkey, start, suppress=True, trigger_on_release=True)
+
+def rods_select_click(event, rods, x_start, box_size, toplevel_win):
+	global num_of_rods
+	global background_image, background_label
+	if event.x < x_start:
+		num_of_rods = 1
+	elif event.x >= ((rods * box_size) + x_start):
+		num_of_rods = rods
+	else:
+		num_of_rods = ((event.x - x_start) // box_size) + 1
+	toplevel_win.destroy()
+	background_image.clean_background(x=220, y=200, ind=2)
+	background_image.add_text(str(num_of_rods), cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=220, y_loc=207, x_width=35, y_height=16, color="#000000")
+	background_image.generate_tkinter_img()
+	background_label.configure(image=background_image.image_tkinter)
+
+def toggle_btn(widget1, widget2, variable):
 	if not variable:
 		widget1.config(background="#2DFA09", activebackground="#2DFA09", highlightthickness=0)
 		widget2.config(background="#2DFA09", activebackground="#2DFA09", highlightthickness=3)
@@ -551,73 +655,6 @@ class BackgroundImage:
 	def generate_tkinter_img(self):
 		self.image_tkinter = ImageTk.PhotoImage(ImagePIL.fromarray(self.image))
 
-def retrieve_select_click(event, option_height, retrieve_types, toplevel_win):
-	global retrieve
-	global background_image, background_label
-	retrieve = retrieve_types[event.y // option_height]
-	toplevel_win.destroy()
-	background_image.clean_background(x=150, y=120, ind=0)
-	background_image.add_text(retrieve, cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=150, y_loc=127, x_width=175, y_height=16, color="#000000")
-	background_image.generate_tkinter_img()
-	background_label.configure(image=background_image.image_tkinter)
-
-def retrieve_select():
-	global retrieve_types, root, started, hotkey
-	if not started:
-		keyboard.unhook_all_hotkeys()
-
-		option_height = 30
-
-		width = 250
-		height = option_height * len(retrieve_types)
-
-		background_image = BackgroundImage(width=width, height=height)
-		wood_texture = cv2.imread(resource_path("run_data\\wood_texture.png"), cv2.IMREAD_UNCHANGED)
-		pasted_height = 0
-		while pasted_height < height:
-			if height - (pasted_height + wood_texture.shape[0]) < 0:
-				wood_texture = wood_texture[:height - pasted_height, :]
-			background_image.paste_image(wood_texture, x_loc=0, y_loc=pasted_height)
-			pasted_height += wood_texture.shape[0]
-		del wood_texture
-
-		for i in range(len(retrieve_types)):
-			background_image.add_text(retrieve_types[i], cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=0, y_loc=(i * option_height) + (option_height // 3) // 2, x_width=width, y_height=(2 * option_height) // 3, color="#ffffff")
-
-		background_image.generate_tkinter_img()
-
-		select_window = tkinter.Toplevel(root)
-		select_window.title("Select retrieve!")
-		select_window.geometry(f"{width}x{height}+{(root.winfo_screenwidth() // 2) - (width // 2)}+{(root.winfo_screenheight() // 2) - (height // 2)}")
-		select_window.resizable(False, False)
-		select_window.grab_set()
-		select_window.focus()
-
-		background_lbl = tkinter.Label(select_window, highlightthickness=0, borderwidth=0, image=background_image.image_tkinter)
-		background_lbl.place(x=0, y=0, width=width, height=height)
-		background_lbl.bind("<ButtonRelease-1>", lambda event: retrieve_select_click(event, option_height, retrieve_types, select_window))
-
-
-
-		"""
-		curr_y = 0
-		for i in retrieve_types:
-			hash_btns.append(tkinter.Label(select_window,
-			                               text=i, font=("Helvetica", 15, "bold"),
-			                               borderwidth=0, highlightthickness=0,
-			                               background="light blue", activebackground="light blue",
-			                               foreground="#ffffff", activeforeground="#ffffff"))
-			hash_btns[-1].place(x=0, y=curr_y, width=250, height=40)
-			hash_btns[-1].bind("<Enter>", lambda event=event, widget=hash_btns[-1]: widget.config(background="#B5E2F0", activebackground="#B5E2F0"))
-			hash_btns[-1].bind("<Leave>", lambda event=event, widget=hash_btns[-1]: widget.config(background="light blue", activebackground="light blue"))
-			hash_btns[-1].bind("<ButtonRelease-1>", lambda event=event, widget=hash_btns[-1]: retrieve_select_click(event, widget, select_window))
-			curr_y += 40
-		"""
-
-		select_window.iconbitmap(resource_path("run_data\\fish_icon.ico"))
-		select_window.wait_window()
-		keyboard.add_hotkey(hotkey, start, suppress=True, trigger_on_release=True)
-
 def main():
 	global started
 
@@ -697,8 +734,8 @@ def main():
 	night_toggle_2 = tkinter.Label(root, highlightthickness=0, borderwidth=0,
 	                               highlightcolor="#000000", highlightbackground="#000000",
 	                               background="red", activebackground="red")
-	night_toggle_1.bind("<ButtonRelease-1>", lambda event: toggle_btn(event, night_toggle_1, night_toggle_2, toggle_night()))
-	night_toggle_2.bind("<ButtonRelease-1>", lambda event: toggle_btn(event, night_toggle_1, night_toggle_2, toggle_night()))
+	night_toggle_1.bind("<ButtonRelease-1>", lambda event: toggle_btn(night_toggle_1, night_toggle_2, toggle_night()))
+	night_toggle_2.bind("<ButtonRelease-1>", lambda event: toggle_btn(night_toggle_1, night_toggle_2, toggle_night()))
 	night_toggle_1.place(x=525, width=25, y=123, height=25)
 	night_toggle_2.place(x=550, width=25, y=128, height=15)
 
@@ -708,8 +745,8 @@ def main():
 	auto_time_warp_toggle_2 = tkinter.Label(root, highlightthickness=0, borderwidth=0,
 	                                        highlightcolor="#000000", highlightbackground="#000000",
 	                                        background="red", activebackground="red")
-	auto_time_warp_toggle_1.bind("<ButtonRelease-1>", lambda event: toggle_btn(event, auto_time_warp_toggle_1, auto_time_warp_toggle_2, toggle_auto_time_warp()))
-	auto_time_warp_toggle_2.bind("<ButtonRelease-1>", lambda event: toggle_btn(event, auto_time_warp_toggle_1, auto_time_warp_toggle_2, toggle_auto_time_warp()))
+	auto_time_warp_toggle_1.bind("<ButtonRelease-1>", lambda event: toggle_btn(auto_time_warp_toggle_1, auto_time_warp_toggle_2, toggle_auto_time_warp()))
+	auto_time_warp_toggle_2.bind("<ButtonRelease-1>", lambda event: toggle_btn(auto_time_warp_toggle_1, auto_time_warp_toggle_2, toggle_auto_time_warp()))
 	auto_time_warp_toggle_1.place(x=525, width=25, y=163, height=25)
 	auto_time_warp_toggle_2.place(x=550, width=25, y=168, height=15)
 
@@ -719,8 +756,8 @@ def main():
 	status_mails_toggle_2 = tkinter.Label(root, highlightthickness=0, borderwidth=0,
 	                                      highlightcolor="#000000", highlightbackground="#000000",
 	                                      background="red", activebackground="red")
-	status_mails_toggle_1.bind("<ButtonRelease-1>", lambda event: toggle_btn(event, status_mails_toggle_1, status_mails_toggle_2, toggle_status_mails()))
-	status_mails_toggle_2.bind("<ButtonRelease-1>", lambda event: toggle_btn(event, status_mails_toggle_1, status_mails_toggle_2, toggle_status_mails()))
+	status_mails_toggle_1.bind("<ButtonRelease-1>", lambda event: toggle_btn(status_mails_toggle_1, status_mails_toggle_2, toggle_status_mails()))
+	status_mails_toggle_2.bind("<ButtonRelease-1>", lambda event: toggle_btn(status_mails_toggle_1, status_mails_toggle_2, toggle_status_mails()))
 	status_mails_toggle_1.place(x=525, width=25, y=203, height=25)
 	status_mails_toggle_2.place(x=550, width=25, y=208, height=15)
 
