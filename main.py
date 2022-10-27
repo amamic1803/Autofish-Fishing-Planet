@@ -29,6 +29,10 @@ def resource_path(relative_path):
 		base_path = os.path.abspath(".")
 	return os.path.join(base_path, relative_path)
 
+def hex_to_rgb(hex_value):
+	hex_value = hex_value.lstrip("#")
+	return tuple(int(hex_value[i:i + 2], 16) for i in (0, 2, 4))
+
 def send_gmail(my_address: str, my_password: str, my_server: str, to_address: str, if_ssl: bool = True, if_tls: bool = False, subject: str = "", body: str = "", file_paths: list = [], byte_streams: list = [], screenshot: bool = False):
 	# generating email
 	e_mail = MIMEMultipart()
@@ -411,6 +415,8 @@ def start():
 	global retrieve
 	global auto_time_warp_toggle
 	global started
+	global root
+	global background_image, background_label
 
 	print("starting")
 
@@ -420,24 +426,28 @@ def start():
 		alive = False
 
 	if not alive:
+		started = True
+		background_image.clean_background(x=0, y=root.winfo_height() - 20, ind=3)
+		background_image.draw_circle((10, root.winfo_height() - 10), 3, color="#2DFA09", filled=True)
+		background_image.generate_tkinter_img()
+		background_label.configure(image=background_image.image_tkinter)
 		process_action = Process(target=action, args=(retrieve, auto_time_warp_toggle))
 		process_action.start()
-
 	else:
 		process_action.kill()
 		process_action.join()
 		process_action.close()
+		started = False
+		background_image.clean_background(x=0, y=root.winfo_height() - 20, ind=3)
+		background_image.draw_circle((10, root.winfo_height() - 10), 3, color="#FF0000", filled=True)
+		background_image.generate_tkinter_img()
+		background_label.configure(image=background_image.image_tkinter)
 
-		mouse.release(button="left")
-		mouse.release(button="right")
+		if mouse.is_pressed(button="left"):
+			mouse.release(button="left")
+		if mouse.is_pressed(button="right"):
+			mouse.release(button="right")
 	# TODO: update start function
-
-def hex_to_rgb(hex_value):
-	hex_value = hex_value.lstrip("#")
-	return tuple(int(hex_value[i:i + 2], 16) for i in (0, 2, 4))
-
-def rgb_to_bgr(rgb_value):
-	return rgb_value[2], rgb_value[1], rgb_value[0]
 
 def background_click(event):
 	global started
@@ -449,7 +459,7 @@ def background_click(event):
 			if 115 <= event.y <= 150:
 				retrieve_select()
 			elif 155 <= event.y <= 190:
-				print("cast len")  # start(blue) 38A0B2, end(yellow) B9B63D
+				cast_len_select()
 			elif 195 <= event.y <= 230:
 				rods_select()
 		if event.x >= 505:
@@ -459,7 +469,6 @@ def background_click(event):
 				toggle_btn(auto_time_warp_toggle_1, auto_time_warp_toggle_2, toggle_auto_time_warp())
 			elif 195 <= event.y <= 230:
 				toggle_btn(status_mails_toggle_1, status_mails_toggle_2, toggle_status_mails())
-	# TODO: add behaviour when clicking any of those
 
 def retrieve_select():
 	global retrieve_types, root, started, hotkey
@@ -477,7 +486,7 @@ def retrieve_select():
 		while pasted_height < height:
 			if height - (pasted_height + wood_texture.shape[0]) < 0:
 				wood_texture = wood_texture[:height - pasted_height, :]
-			background_image.paste_image(wood_texture, x_loc=0, y_loc=pasted_height)
+			background_image.paste_image(wood_texture, x_loc=0, y_loc=pasted_height, bgr=True)
 			pasted_height += wood_texture.shape[0]
 		del wood_texture
 
@@ -511,6 +520,79 @@ def retrieve_select_click(event, option_height, retrieve_types, toplevel_win):
 	background_image.generate_tkinter_img()
 	background_label.configure(image=background_image.image_tkinter)
 
+def cast_len_select():
+	global root, started, hotkey, cast_len
+	if not started:
+		keyboard.unhook_all_hotkeys()
+
+		width = 450
+		height = 80
+
+		background_gradient_image = BackgroundImage(width=350, height=40)
+		background_gradient_image.generate_gradient(starting_color="#38A0B2", ending_color="#B9B63D")
+
+		background_image = BackgroundImage(width=width, height=height)
+		wood_texture = cv2.imread(resource_path("run_data\\wood_texture.png"), cv2.IMREAD_UNCHANGED)
+
+		pasted_height = 0
+		while pasted_height < height:
+			if height - (pasted_height + wood_texture.shape[0]) < 0:
+				wood_texture = wood_texture[:height - pasted_height, :]
+			background_image.paste_image(wood_texture, x_loc=0, y_loc=pasted_height, bgr=True)
+			pasted_height += wood_texture.shape[0]
+		pasted_width = 0
+		while pasted_width < width:
+			if width - (pasted_width + wood_texture.shape[1]) < 0:
+				wood_texture = wood_texture[:, :width - pasted_width]
+			background_image.paste_image(wood_texture, x_loc=pasted_width, y_loc=0, bgr=True)
+			pasted_width += wood_texture.shape[1]
+
+		del wood_texture
+
+		background_image.paste_image(background_gradient_image.image, x_loc=50, y_loc=20)
+		del background_gradient_image
+
+		background_image.add_text(" 0 % ", cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=0, y_loc=20, x_width=50, y_height=40, color="#ffffff")
+		background_image.add_text("100 %", cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=400, y_loc=20, x_width=50, y_height=40, color="#ffffff")
+
+		line_loc = 50 + int(round(350 * (cast_len / 100), 0))
+
+		background_image.draw_line((line_loc, 19), (line_loc, 60), "#E2062C", 2)
+
+		background_image.generate_tkinter_img()
+
+		select_window = tkinter.Toplevel(root)
+		select_window.title("Select cast length!")
+		select_window.geometry(f"{width}x{height}+{(root.winfo_screenwidth() // 2) - (width // 2)}+{(root.winfo_screenheight() // 2) - (height // 2)}")
+		select_window.resizable(False, False)
+		select_window.grab_set()
+		select_window.focus()
+
+		background_lbl = tkinter.Label(select_window, highlightthickness=0, borderwidth=0, image=background_image.image_tkinter)
+		background_lbl.place(x=0, y=0, width=width, height=height)
+		background_lbl.bind("<ButtonRelease-1>", lambda event: cast_len_select_click(event, 50, 350, select_window))
+
+		select_window.iconbitmap(resource_path("run_data\\fish_icon.ico"))
+		select_window.wait_window()
+		keyboard.add_hotkey(hotkey, start, suppress=True, trigger_on_release=True)
+
+def cast_len_select_click(event, x_start, box_size, toplevel_win):
+	global cast_len
+	global background_image, background_label
+	if event.x < x_start:
+		cast_len = 15
+	elif event.x >= x_start + box_size:
+		cast_len = 100
+	else:
+		cast_len = int(round(((event.x - x_start) / box_size) * 100, 0))
+		if cast_len < 15:
+			cast_len = 15
+	toplevel_win.destroy()
+	background_image.clean_background(x=200, y=160, ind=1)
+	background_image.add_text(f"{cast_len} %", cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=200, y_loc=167, x_width=75, y_height=16, color="#000000")
+	background_image.generate_tkinter_img()
+	background_label.configure(image=background_image.image_tkinter)
+
 def rods_select():
 	global root, started, hotkey
 	if not started:
@@ -526,7 +608,7 @@ def rods_select():
 		while pasted_height < height:
 			if height - (pasted_height + wood_texture.shape[0]) < 0:
 				wood_texture = wood_texture[:height - pasted_height, :]
-			background_image.paste_image(wood_texture, x_loc=0, y_loc=pasted_height)
+			background_image.paste_image(wood_texture, x_loc=0, y_loc=pasted_height, bgr=True)
 			pasted_height += wood_texture.shape[0]
 		del wood_texture
 
@@ -566,16 +648,18 @@ def rods_select_click(event, rods, x_start, box_size, toplevel_win):
 	background_label.configure(image=background_image.image_tkinter)
 
 def toggle_btn(widget1, widget2, variable):
-	if not variable:
-		widget1.config(background="#2DFA09", activebackground="#2DFA09", highlightthickness=0)
-		widget2.config(background="#2DFA09", activebackground="#2DFA09", highlightthickness=3)
-		widget1.place_configure(y=widget1.winfo_y() + 5, height=widget1.winfo_height() - 10)
-		widget2.place_configure(y=widget2.winfo_y() - 5, height=widget2.winfo_height() + 10)
-	else:
-		widget1.config(background="red", activebackground="red", highlightthickness=3)
-		widget2.config(background="red", activebackground="red", highlightthickness=0)
-		widget1.place_configure(y=widget1.winfo_y() - 5, height=widget1.winfo_height() + 10)
-		widget2.place_configure(y=widget2.winfo_y() + 5, height=widget2.winfo_height() - 10)
+	global started
+	if not started:
+		if not variable:
+			widget1.config(background="#2DFA09", activebackground="#2DFA09", highlightthickness=0)
+			widget2.config(background="#2DFA09", activebackground="#2DFA09", highlightthickness=3)
+			widget1.place_configure(y=widget1.winfo_y() + 5, height=widget1.winfo_height() - 10)
+			widget2.place_configure(y=widget2.winfo_y() - 5, height=widget2.winfo_height() + 10)
+		else:
+			widget1.config(background="#FF0000", activebackground="#FF0000", highlightthickness=3)
+			widget2.config(background="#FF0000", activebackground="#FF0000", highlightthickness=0)
+			widget1.place_configure(y=widget1.winfo_y() - 5, height=widget1.winfo_height() + 10)
+			widget2.place_configure(y=widget2.winfo_y() + 5, height=widget2.winfo_height() - 10)
 
 def toggle_night():
 	global night_toggle
@@ -623,8 +707,9 @@ class BackgroundImage:
 			else:
 				self.image[:, curr_index] = row_color
 
-	def paste_image(self, img_to_paste, x_loc, y_loc):
-		img_to_paste = cv2.cvtColor(img_to_paste, cv2.COLOR_BGRA2RGBA)
+	def paste_image(self, img_to_paste, x_loc, y_loc, bgr=False):
+		if bgr:
+			img_to_paste = cv2.cvtColor(img_to_paste, cv2.COLOR_BGRA2RGBA)
 		x1, y1 = x_loc, y_loc
 		x2, y2 = x1 + img_to_paste.shape[1], y1 + img_to_paste.shape[0]
 
@@ -644,7 +729,15 @@ class BackgroundImage:
 			text_scale -= 0.01
 			text_size = cv2.getTextSize(text, text_font, text_scale, text_thickness)
 		text_origin = (int(round((x_width - text_size[0][0]) / 2, 0)) + x_loc, int(round((y_height + text_size[0][1]) / 2, 0)) + y_loc)
-		self.image = cv2.putText(self.image, text, text_origin, text_font, text_scale, rgb_to_bgr(hex_to_rgb(color)), thickness=text_thickness, lineType=cv2.LINE_AA)
+		self.image = cv2.putText(self.image, text, text_origin, text_font, text_scale, hex_to_rgb(color), thickness=text_thickness, lineType=cv2.LINE_AA)
+
+	def draw_circle(self, center, radius, color, thickness=1, filled=True):
+		if filled:
+			thickness = - 1
+		self.image = cv2.circle(self.image, center, radius, hex_to_rgb(color), thickness=thickness, lineType=cv2.LINE_AA)
+
+	def draw_line(self, point_1, point_2, color, thickness=1):
+		self.image = cv2.line(self.image, point_1, point_2, hex_to_rgb(color), thickness=thickness, lineType=cv2.LINE_AA)
 
 	def save_background(self, x, y, width, height):
 		self.saved_backgrounds.append(np.copy(self.image[y:y + height, x:x + width]))
@@ -724,16 +817,19 @@ def main():
 	background_image.save_background(x=220, y=200, width=35, height=30)
 	background_image.add_text(str(num_of_rods), cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=220, y_loc=207, x_width=35, y_height=16, color="#000000")
 
+	background_image.save_background(x=0, y=height - 20, width=20, height=20)
+	background_image.draw_circle((10, height - 10), 3, color="#FF0000", filled=True)
+
 	background_image.generate_tkinter_img()
 	background_label = tkinter.Label(root, borderwidth=0, highlightthickness=0, image=background_image.image_tkinter)
 	background_label.place(x=0, y=0, width=width, height=height)
 
 	night_toggle_1 = tkinter.Label(root, borderwidth=0,
 	                               highlightthickness=3, highlightcolor="#000000", highlightbackground="#000000",
-	                               background="red", activebackground="red")
+	                               background="#FF0000", activebackground="#FF0000")
 	night_toggle_2 = tkinter.Label(root, highlightthickness=0, borderwidth=0,
 	                               highlightcolor="#000000", highlightbackground="#000000",
-	                               background="red", activebackground="red")
+	                               background="#FF0000", activebackground="#FF0000")
 	night_toggle_1.bind("<ButtonRelease-1>", lambda event: toggle_btn(night_toggle_1, night_toggle_2, toggle_night()))
 	night_toggle_2.bind("<ButtonRelease-1>", lambda event: toggle_btn(night_toggle_1, night_toggle_2, toggle_night()))
 	night_toggle_1.place(x=525, width=25, y=123, height=25)
@@ -741,10 +837,10 @@ def main():
 
 	auto_time_warp_toggle_1 = tkinter.Label(root, borderwidth=0,
 	                                        highlightthickness=3, highlightcolor="#000000", highlightbackground="#000000",
-	                                        background="red", activebackground="red")
+	                                        background="#FF0000", activebackground="#FF0000")
 	auto_time_warp_toggle_2 = tkinter.Label(root, highlightthickness=0, borderwidth=0,
 	                                        highlightcolor="#000000", highlightbackground="#000000",
-	                                        background="red", activebackground="red")
+	                                        background="#FF0000", activebackground="#FF0000")
 	auto_time_warp_toggle_1.bind("<ButtonRelease-1>", lambda event: toggle_btn(auto_time_warp_toggle_1, auto_time_warp_toggle_2, toggle_auto_time_warp()))
 	auto_time_warp_toggle_2.bind("<ButtonRelease-1>", lambda event: toggle_btn(auto_time_warp_toggle_1, auto_time_warp_toggle_2, toggle_auto_time_warp()))
 	auto_time_warp_toggle_1.place(x=525, width=25, y=163, height=25)
@@ -752,10 +848,10 @@ def main():
 
 	status_mails_toggle_1 = tkinter.Label(root, borderwidth=0,
 	                                      highlightthickness=3, highlightcolor="#000000", highlightbackground="#000000",
-	                                      background="red", activebackground="red")
+	                                      background="#FF0000", activebackground="#FF0000")
 	status_mails_toggle_2 = tkinter.Label(root, highlightthickness=0, borderwidth=0,
 	                                      highlightcolor="#000000", highlightbackground="#000000",
-	                                      background="red", activebackground="red")
+	                                      background="#FF0000", activebackground="#FF0000")
 	status_mails_toggle_1.bind("<ButtonRelease-1>", lambda event: toggle_btn(status_mails_toggle_1, status_mails_toggle_2, toggle_status_mails()))
 	status_mails_toggle_2.bind("<ButtonRelease-1>", lambda event: toggle_btn(status_mails_toggle_1, status_mails_toggle_2, toggle_status_mails()))
 	status_mails_toggle_1.place(x=525, width=25, y=203, height=25)
