@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import tkinter
+import smtplib
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
@@ -9,7 +10,6 @@ from email.mime.text import MIMEText
 from io import BytesIO
 from multiprocessing import Process, freeze_support
 from random import randint
-from smtplib import SMTP, SMTP_SSL
 
 import cv2
 import keyboard
@@ -32,101 +32,6 @@ def resource_path(relative_path):
 def hex_to_rgb(hex_value):
 	hex_value = hex_value.lstrip("#")
 	return tuple(int(hex_value[i:i + 2], 16) for i in (0, 2, 4))
-
-def send_gmail(my_address: str, my_password: str, my_server: str, to_address: str, if_ssl: bool = True, if_tls: bool = False, subject: str = "", body: str = "", file_paths: list = [], byte_streams: list = [], screenshot: bool = False):
-	# generating email
-	e_mail = MIMEMultipart()
-	e_mail["From"] = my_address
-	e_mail["To"] = to_address
-	e_mail["Subject"] = subject
-	e_mail.attach(MIMEText(body))
-
-	file_existance = True
-
-	file_names = []
-
-	for i in file_paths:
-		if not os.path.exists(i):
-			file_existance = False
-		else:
-			basen = os.path.basename(i)
-			while basen in file_names:
-				basen = f'{basen.split(".")[0]}{randint(10 ** 10, 10 ** 15)}.{basen.split(".")[1]}'
-			file_names.append(basen)
-			file = open(i, "rb")
-			attac = MIMEBase("application", "octet-stream")
-			attac.set_payload(file.read())
-			encoders.encode_base64(attac)
-			attac.add_header("Content-Disposition", f'attachement; filename="{basen}"')
-			e_mail.attach(attac)
-			del file, attac, basen
-
-	for i in byte_streams:
-		basen = i[1]
-		while basen in file_names:
-			basen = f'{basen.split(".")[0]}{randint(10 ** 10, 10 ** 15)}.{basen.split(".")[1]}'
-		file_names.append(basen)
-		attac = MIMEBase("application", "octet-stream")
-		attac.set_payload(i[0])
-		encoders.encode_base64(attac)
-		attac.add_header("Content-Disposition", f'attachement; filename="{basen}"')
-		e_mail.attach(attac)
-		del attac, basen
-
-	if screenshot:
-		basen = "screenshot.png"
-		while basen in file_names:
-			basen = f"screenshot{randint(10 ** 10, 10 ** 15)}.png"
-		scrnsht = BytesIO()
-		ImageGrab.grab().save(scrnsht, format="png")
-		scrn = MIMEBase("application", "octet-stream")
-		scrn.set_payload(scrnsht.getvalue())
-		encoders.encode_base64(scrn)
-		scrn.add_header("Content-Disposition", f'attachment; filename="{basen}"')
-		e_mail.attach(scrn)
-		del scrn, scrnsht, basen
-
-	del file_names
-
-	# sending email
-	if if_ssl:
-		with SMTP_SSL(my_server) as smtp:
-			try:
-				smtp.ehlo()
-				smtp.login(my_address, my_password)
-				smtp.send_message(e_mail, my_address, to_address)
-				mail_sent = True
-			except:
-				mail_sent = False
-	elif if_tls:
-		with SMTP(my_server) as smtp:
-			try:
-				smtp.ehlo()
-				smtp.starttls()
-				smtp.login(my_address, my_password)
-				smtp.send_message(e_mail, my_address, to_address)
-				mail_sent = True
-			except:
-				mail_sent = False
-	else:
-		with SMTP(my_server) as smtp:
-			try:
-				smtp.ehlo()
-				smtp.login(my_address, my_password)
-				smtp.send_message(e_mail, my_address, to_address)
-				mail_sent = True
-			except:
-				mail_sent = False
-
-	if mail_sent:
-		ret_message = "E-Mail sent successfully!"
-	else:
-		ret_message = "E-Mail failed to send!"
-
-	if not file_existance:
-		ret_message += "\nAt least one file not found!"
-
-	return mail_sent, ret_message
 
 def action(retrieve, auto_time_warp):
 	load_data()
@@ -447,7 +352,7 @@ def start():
 			mouse.release(button="left")
 		if mouse.is_pressed(button="right"):
 			mouse.release(button="right")
-	# TODO: update start function
+# TODO: update start function
 
 def background_click(event):
 	global started
@@ -613,7 +518,7 @@ def rods_select():
 		del wood_texture
 
 		for i in range(1, rods + 1):
-			background_image.add_text(str(i), cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=(((width - (height * rods)) // 2) + ((i - 1) * height)), y_loc=((height // 3) // 2),  x_width=height, y_height=(2 * height) // 3, color="#ffffff")
+			background_image.add_text(str(i), cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=(((width - (height * rods)) // 2) + ((i - 1) * height)), y_loc=((height // 3) // 2), x_width=height, y_height=(2 * height) // 3, color="#ffffff")
 
 		background_image.generate_tkinter_img()
 
@@ -681,7 +586,7 @@ def toggle_status_mails():
 	if not started:
 		status_mails_toggle = not status_mails_toggle
 	return not status_mails_toggle
-	# TODO: add dialog to sign in to gmail
+# TODO: add dialog to sign in to gmail
 
 class BackgroundImage:
 	def __init__(self, width, height):
@@ -747,6 +652,105 @@ class BackgroundImage:
 
 	def generate_tkinter_img(self):
 		self.image_tkinter = ImageTk.PhotoImage(ImagePIL.fromarray(self.image))
+
+class Gmail:
+	def __init__(self, e_mail, key, server="smtp.gmail.com", port=587):
+		self.my_e_mail = e_mail
+		self.my_login_key = key
+		self.my_server = server
+		self.my_server_port = port
+
+	def verify_credentials(self):
+		with smtplib.SMTP(host=self.my_server, port=self.my_server_port) as smtp:
+			try:
+				smtp.ehlo()
+				smtp.starttls()
+				smtp.ehlo()
+				smtp.login(user=self.my_e_mail, password=self.my_login_key)
+				smtp.quit()
+				return True
+			except (smtplib.SMTPException,
+			        smtplib.SMTPServerDisconnected,
+			        smtplib.SMTPResponseException,
+			        smtplib.SMTPSenderRefused,
+			        smtplib.SMTPRecipientsRefused,
+			        smtplib.SMTPDataError,
+			        smtplib.SMTPConnectError,
+			        smtplib.SMTPHeloError,
+			        smtplib.SMTPNotSupportedError,
+			        smtplib.SMTPAuthenticationError):
+				return False
+
+	def send_gmail(self, to: str, subject: str = "", body: str = "", file_paths: list = None, byte_streams: list = None, screenshot: bool = False):
+		# generating email
+		e_mail = MIMEMultipart()
+		e_mail["From"] = self.my_e_mail
+		e_mail["To"] = to
+		e_mail["Subject"] = subject
+		e_mail.attach(MIMEText(body))
+
+		file_names = []
+		if file_paths is not None:
+			for i in file_paths:
+				if os.path.exists(i):
+					basen = os.path.basename(i)
+					while basen in file_names:
+						basen = f'{basen.split(".")[0]}{randint(10 ** 10, 10 ** 15)}.{basen.split(".")[1]}'
+					file_names.append(basen)
+					file = open(i, "rb")
+					attac = MIMEBase("application", "octet-stream")
+					attac.set_payload(file.read())
+					encoders.encode_base64(attac)
+					attac.add_header("Content-Disposition", f'attachement; filename="{basen}"')
+					e_mail.attach(attac)
+					del file, attac, basen
+		if byte_streams is not None:
+			for i in byte_streams:
+				basen = i[1]
+				while basen in file_names:
+					basen = f'{basen.split(".")[0]}{randint(10 ** 10, 10 ** 15)}.{basen.split(".")[1]}'
+				file_names.append(basen)
+				attac = MIMEBase("application", "octet-stream")
+				attac.set_payload(i[0])
+				encoders.encode_base64(attac)
+				attac.add_header("Content-Disposition", f'attachement; filename="{basen}"')
+				e_mail.attach(attac)
+				del attac, basen
+		if screenshot:
+			basen = "screenshot.png"
+			while basen in file_names:
+				basen = f"screenshot{randint(10 ** 10, 10 ** 15)}.png"
+			scrnsht = BytesIO()
+			ImageGrab.grab().save(scrnsht, format="png")
+			scrn = MIMEBase("application", "octet-stream")
+			scrn.set_payload(scrnsht.getvalue())
+			encoders.encode_base64(scrn)
+			scrn.add_header("Content-Disposition", f'attachment; filename="{basen}"')
+			e_mail.attach(scrn)
+			del scrn, scrnsht, basen
+		del file_names
+
+		# sending email
+		with smtplib.SMTP(host=self.my_server, port=self.my_server_port) as smtp:
+			try:
+				smtp.ehlo()
+				smtp.starttls()
+				smtp.ehlo()
+				smtp.login(user=self.my_e_mail, password=self.my_login_key)
+				smtp.send_message(msg=e_mail, from_addr=self.my_e_mail, to_addrs=to)
+				smtp.quit()
+				return True
+			except (smtplib.SMTPException,
+			        smtplib.SMTPServerDisconnected,
+			        smtplib.SMTPResponseException,
+			        smtplib.SMTPSenderRefused,
+			        smtplib.SMTPRecipientsRefused,
+			        smtplib.SMTPDataError,
+			        smtplib.SMTPConnectError,
+			        smtplib.SMTPHeloError,
+			        smtplib.SMTPNotSupportedError,
+			        smtplib.SMTPAuthenticationError):
+				return False
 
 def main():
 	global started
