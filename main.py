@@ -10,7 +10,7 @@ from email.mime.text import MIMEText
 from io import BytesIO
 from multiprocessing import Process, freeze_support
 from random import randint
-from tkinter.messagebox import showerror
+from tkinter.messagebox import showerror, showinfo
 
 import cv2
 import keyboard
@@ -586,10 +586,12 @@ def toggle_status_mails():
 	global root
 	global status_mails_toggle
 	global started
+	global tick_click
 	if not started:
 		if not status_mails_toggle:
 			keyboard.unhook_all_hotkeys()
 
+			tick_click = False
 			width = 450
 			height = 115
 
@@ -615,6 +617,7 @@ def toggle_status_mails():
 			background_image.add_text("Key:", cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=18, y_loc=82, x_width=100, y_height=20, color="#ffffff")
 
 			background_image.paste_image(cv2.imread(resource_path("run_data\\check-mark.png"), cv2.IMREAD_UNCHANGED), x_loc=width - 38, y_loc=8, bgr=True)
+			background_image.paste_image(cv2.imread(resource_path("run_data\\question-mark.png"), cv2.IMREAD_UNCHANGED), x_loc=5, y_loc=5, bgr=True)
 
 			background_image.generate_tkinter_img()
 
@@ -626,7 +629,7 @@ def toggle_status_mails():
 			select_window.focus()
 
 			background_lbl = tkinter.Label(select_window, highlightthickness=0, borderwidth=0, image=background_image.image_tkinter)
-			background_lbl.bind("<ButtonRelease-1>", lambda event: close_mail_window(event, width, select_window))
+			background_lbl.bind("<ButtonRelease-1>", lambda event: window_back_click(event, width, select_window))
 			background_lbl.place(x=0, y=0, width=width, height=height)
 
 			email_var = tkinter.StringVar(master=select_window, value="")
@@ -650,21 +653,31 @@ def toggle_status_mails():
 			select_window.iconbitmap(resource_path("run_data\\fish_icon.ico"))
 			select_window.wait_window()
 
-			if check_mail(email_var.get().strip(" "), key_var.get()):
-				status_mails_toggle = not status_mails_toggle
-				keyboard.add_hotkey(hotkey, start, suppress=True, trigger_on_release=True)
-				return not status_mails_toggle
+			if_tick_click = tick_click
+			del tick_click
+
+			if if_tick_click:
+				if check_mail(email_var.get().strip(" "), key_var.get()):
+					status_mails_toggle = not status_mails_toggle
+					keyboard.add_hotkey(hotkey, start, suppress=True, trigger_on_release=True)
+					return not status_mails_toggle
+				else:
+					showerror(title="Error!", message="Couldn't sign in to Gmail!", parent=root)
+					keyboard.add_hotkey(hotkey, start, suppress=True, trigger_on_release=True)
+					return None
 			else:
-				showerror(title="Error!", message="Couldn't sign in to Gmail!", parent=root)
-				keyboard.add_hotkey(hotkey, start, suppress=True, trigger_on_release=True)
 				return None
 		else:
 			status_mails_toggle = not status_mails_toggle
 			return not status_mails_toggle
 
-def close_mail_window(event, width, window):
+def window_back_click(event, width, window):
+	global tick_click
 	if event.x >= (width - 50) and event.y <= 50:
+		tick_click = True
 		window.destroy()
+	elif event.x <= 35 and event.y <= 35:
+		showinfo(title="Instructions!", message="""1. go to My Account in Gmail\n2. click on Security\n3. scroll down to the Signing into Google\n4. click on App Password (2-step auth should be enabled)\n5. under Select App choose other\n6. enter familiar name (e.g. Autofish-Fishing-Planet)\n7. click Generate\n8. write down key from yellow bar\n9. use that key to sign in in future""", parent=window)
 
 def check_mail(e_mail, key):
 	global email
