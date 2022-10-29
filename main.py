@@ -34,58 +34,39 @@ def hex_to_rgb(hex_value):
 	hex_value = hex_value.lstrip("#")
 	return tuple(int(hex_value[i:i + 2], 16) for i in (0, 2, 4))
 
-def action(retrieve, auto_time_warp):
-	load_data()
-	while psutil.Process(os.getpid()).parent() is not None:
-		line_length = checks("lineLen")
-
-		if line_length == 0:
-			mouse.release(button="left")
-			mouse.release(button="right")
-			time.sleep(3)
-			checks("aftReIn")
-			if checks("full"):
-				warp(auto_time_warp)
-			else:
-				motions("cast")
-				caught = False
-		elif line_length <= 5:
-			mouse.press(button="left")
-			time.sleep(1)
-		else:
-			if retrieve != "float":
-				motions(retrieve)
-			else:
-				match checks("float-state"):
-					case "wait":
-						time.sleep(0.75)
-					case "bite":
-						motions("twitching")
-					case "empty":
-						motions("twitching")
-
 def motions(tip):
 	match tip:
-		case "twitching":
+		case "Twitching":
 			mouse.press(button="left")
 			time.sleep(0.05)
 			mouse.press(button="right")
 			time.sleep(0.25)
 			mouse.release(button="right")
 			time.sleep(0.65)
-		case "stop-n-go":
+		case "Stop&Go":
 			mouse.press(button="left")
 			time.sleep(2)
 			mouse.release(button="left")
 			time.sleep(0.5)
-		case "cast":
-			mouse.press(button="left")
-			time.sleep(1.935)
-			mouse.release(button="left")
-			time.sleep(12)
+		case "Lift&Drop":
+			pass
+		case "Straight":
+			pass
+		case "Straight & Slow":
+			pass
+		case "Popping":
+			pass
+		case "Walking":
+			pass
+		case "Float":
+			pass
+		case "Bottom":
+			pass
 
 def checks(tip):
 	global full_val_low, full_val_high
+	global bluetension_val_low, bluetension_val_high
+	global bluefish_val_low, bluefish_val_high
 	global image_close_orange
 	global image_close_gray
 	global image_extend_orange
@@ -101,6 +82,8 @@ def checks(tip):
 				if (full_val_low[0] <= screen_load[88, i][0] <= full_val_high[0]) and (full_val_low[1] <= screen_load[88, i][1] <= full_val_high[1]) and (full_val_low[2] <= screen_load[88, i][2] <= full_val_high[2]):
 					return True
 			return False
+		case "fish-hooked":
+			pass
 		case "full":
 			screen_load = ImageGrab.grab().load()
 			for i in range(162, 200):
@@ -230,7 +213,8 @@ def checks(tip):
 				broj = "0"
 			return int(broj)
 
-def warp(auto_time_warp):
+def warp(auto_time_warp, night, status_mails, e_mail_client):
+	# TODO: warp function
 	global image_next_morning_gray
 	keyboard.press_and_release("t")
 	time.sleep(3)
@@ -244,10 +228,105 @@ def warp(auto_time_warp):
 				time.sleep(5)
 				break
 	else:
+
 		# send_gmail(my_address=values.email_address, my_password=values.email_password, my_server=values.email_server, to_address=values.email_recipient, subject="Fishing-Planet-Autofisher: Manual time-warp", body="Keepnet is full!\nAwaiting manual time-warp!", screenshot=True)
 		psutil.Process(os.getpid()).kill()
 
+def action(retrieve, cast_len, num_of_rods, night_toggle, auto_time_warp_toggle, status_mails_toggle, email):
+	load_data()
+	fish_hooked = False
+	while psutil.Process(os.getpid()).parent() is not None:
+		line_length = checks("lineLen")
+
+		# TODO: release fish with fine
+
+		if line_length == 0:
+			fish_hooked = False
+			if mouse.is_pressed(button="left"):
+				mouse.release(button="left")
+			if mouse.is_pressed(button="right"):
+				mouse.release(button="right")
+			time.sleep(3)
+
+			checks("aftReIn")
+
+			# TODO: check for rod damage, change rod
+
+			if checks("full"):  # TODO: warp by time of day, not only full keepnet
+				warp(auto_time_warp_toggle, night_toggle, status_mails_toggle, email)
+			else:
+				# cast
+				mouse.press(button="left")
+				time.sleep(0.72 + ((1.1 * cast_len) / 100))
+				mouse.release(button="left")
+				time.sleep(12)
+		elif line_length <= 5:
+			# reel in slower if 5 meters or less
+			mouse.press(button="left")
+			time.sleep(1)
+		else:
+			if not fish_hooked:
+				if checks("fish-hooked"):
+					fish_hooked = True
+				else:
+					match retrieve:
+						case "Float":
+							match checks("float-state"):
+								case "wait":
+									time.sleep(0.75)
+								case "bite":
+									motions("Twitching")
+								case "empty":
+									motions("Twitching")
+						case "Bottom":
+							pass
+						case _:
+							motions(retrieve)
+			else:
+				motions("Twitching")  # using twitching as the most effective method of reeling in fish
+
+def start():
+	global started
+	global process_action
+	global root, background_image, background_label
+
+	global retrieve, cast_len, num_of_rods
+	global night_toggle, auto_time_warp_toggle, status_mails_toggle
+	global email
+
+	if not started:
+		started = True
+		background_image.clean_background(x=0, y=root.winfo_height() - 20, ind=3)
+		background_image.draw_circle((10, root.winfo_height() - 10), 3, color="#2DFA09", filled=True)
+		background_image.generate_tkinter_img()
+		background_label.configure(image=background_image.image_tkinter)
+		process_action = Process(target=action, args=(retrieve, cast_len, num_of_rods, night_toggle, auto_time_warp_toggle, status_mails_toggle, email))
+		process_action.start()
+	else:
+		try:
+			process_action.kill()
+			process_action.join()
+			process_action.close()
+		except (NameError, ValueError):
+			pass
+
+		background_image.clean_background(x=0, y=root.winfo_height() - 20, ind=3)
+		background_image.draw_circle((10, root.winfo_height() - 10), 3, color="#FF0000", filled=True)
+		background_image.generate_tkinter_img()
+		background_label.configure(image=background_image.image_tkinter)
+
+		if mouse.is_pressed(button="left"):
+			mouse.release(button="left")
+		if mouse.is_pressed(button="right"):
+			mouse.release(button="right")
+
+		started = False
+
 def load_data():
+	global full_val_low, full_val_high
+	full_val_low = (250, 185, 0)
+	full_val_high = (260, 195, 5)
+
 	global bluetension_val_low, bluetension_val_high
 	bluetension_val_low = (25, 50, 170)
 	bluetension_val_high = (55, 80, 200)
@@ -256,9 +335,10 @@ def load_data():
 	bluefish_val_low = (40, 40, 120)
 	bluefish_val_high = (70, 70, 170)
 
-	global full_val_low, full_val_high
-	full_val_low = (250, 185, 0)
-	full_val_high = (260, 195, 5)
+	"""
+	# bobber_val_low = (142, 8, 8)
+	# bobber_val_high = (215, 165, 165)
+	"""
 
 	global images_digits
 	images_digits = []
@@ -292,68 +372,6 @@ def load_data():
 
 	global image_release_gray
 	image_release_gray = cv2.imread(resource_path(r"run_data/release_gray.png"), cv2.IMREAD_GRAYSCALE)
-
-	"""
-	email_address = ""
-	email_password = ""
-	email_server = ""
-	email_ssl = True
-	email_tls = False
-	email_recipient = ""
-
-	orangekeep_val_low = (190, 120, 50)
-	orangekeep_val_high = (245, 165, 95)
-	bluetension_val_low = (25, 50, 170)
-	bluetension_val_high = (55, 80, 200)
-	bluefish_val_low = (40, 40, 120)
-	bluefish_val_high = (70, 70, 170)
-	whitebar_val_low = (180, 0, 0)
-	whitebar_val_high = (235, 150, 150)
-	full_val_low = (250, 185, 0)
-	full_val_high = (260, 195, 5)  # (255, 190, 0)
-
-	# bobber_val_low = (142, 8, 8)
-	# bobber_val_high = (215, 165, 165)
-	"""
-
-def start():
-	global process_action
-	global retrieve
-	global auto_time_warp_toggle
-	global started
-	global root
-	global background_image, background_label
-
-	print("starting")
-
-	try:
-		alive = process_action.is_alive()
-	except (NameError, ValueError):
-		alive = False
-
-	if not alive:
-		started = True
-		background_image.clean_background(x=0, y=root.winfo_height() - 20, ind=3)
-		background_image.draw_circle((10, root.winfo_height() - 10), 3, color="#2DFA09", filled=True)
-		background_image.generate_tkinter_img()
-		background_label.configure(image=background_image.image_tkinter)
-		process_action = Process(target=action, args=(retrieve, auto_time_warp_toggle))
-		process_action.start()
-	else:
-		process_action.kill()
-		process_action.join()
-		process_action.close()
-		started = False
-		background_image.clean_background(x=0, y=root.winfo_height() - 20, ind=3)
-		background_image.draw_circle((10, root.winfo_height() - 10), 3, color="#FF0000", filled=True)
-		background_image.generate_tkinter_img()
-		background_label.configure(image=background_image.image_tkinter)
-
-		if mouse.is_pressed(button="left"):
-			mouse.release(button="left")
-		if mouse.is_pressed(button="right"):
-			mouse.release(button="right")
-# TODO: update start function
 
 def background_click(event):
 	global started
@@ -629,7 +647,7 @@ def toggle_status_mails():
 			select_window.focus()
 
 			background_lbl = tkinter.Label(select_window, highlightthickness=0, borderwidth=0, image=background_image.image_tkinter)
-			background_lbl.bind("<ButtonRelease-1>", lambda event: window_back_click(event, width, select_window))
+			background_lbl.bind("<ButtonRelease-1>", lambda event: gmail_window_back_click(event, width, select_window))
 			background_lbl.place(x=0, y=0, width=width, height=height)
 
 			email_var = tkinter.StringVar(master=select_window, value="")
@@ -657,7 +675,7 @@ def toggle_status_mails():
 			del tick_click
 
 			if if_tick_click:
-				if check_mail(email_var.get().strip(" "), key_var.get()):
+				if verify_mail_credentials(email_var.get().strip(" "), key_var.get()):
 					status_mails_toggle = not status_mails_toggle
 					keyboard.add_hotkey(hotkey, start, suppress=True, trigger_on_release=True)
 					return not status_mails_toggle
@@ -671,7 +689,7 @@ def toggle_status_mails():
 			status_mails_toggle = not status_mails_toggle
 			return not status_mails_toggle
 
-def window_back_click(event, width, window):
+def gmail_window_back_click(event, width, window):
 	global tick_click
 	if event.x >= (width - 50) and event.y <= 50:
 		tick_click = True
@@ -679,7 +697,7 @@ def window_back_click(event, width, window):
 	elif event.x <= 35 and event.y <= 35:
 		showinfo(title="Instructions!", message="""1. go to My Account in Gmail\n2. click on Security\n3. scroll down to the Signing into Google\n4. click on App Password (2-step auth should be enabled)\n5. under Select App choose other\n6. enter familiar name (e.g. Autofish-Fishing-Planet)\n7. click Generate\n8. write down key from yellow bar\n9. use that key to sign in in future""", parent=window)
 
-def check_mail(e_mail, key):
+def verify_mail_credentials(e_mail, key):
 	global email
 	email = Gmail(e_mail=e_mail, key=key)
 	if email.verify_credentials():
@@ -973,55 +991,6 @@ def main():
 		mouse.release(button="left")
 	if mouse.is_pressed(button="right"):
 		mouse.release(button="right")
-
-	"""
-	retrieve_types = {1: "twitching",
-	                  2: "stop-n-go",
-	                  3: "float"}
-
-	while True:
-		os.system("cls")
-		print("1. TWITCHING\n2. STOP & GO\n3. FLOAT\n\n")
-		try:
-			retrieve = retrieve_types[int(input("TYPE NUMBER: ").strip("."))]
-			break
-		except ValueError:
-			print("INVALID NUMBER")
-			time.sleep(2.5)
-		except KeyError:
-			print("INVALID NUMBER")
-			time.sleep(2.5)
-
-	while True:
-		os.system("cls")
-		auto_time_warp = input("AUTO TIME-WARP?(Y/N): ").upper()
-
-		if "Y" in auto_time_warp or "YES" in auto_time_warp:
-			auto_time_warp = True
-			break
-		elif "N" in auto_time_warp or "NO" in auto_time_warp:
-			auto_time_warp = False
-			break
-		else:
-			print("INVALID INPUT!")
-			time.sleep(2.5)
-
-	
-	keyboard.add_hotkey("Alt+Y", ext, suppress=True, trigger_on_release=True)
-
-	# instructions
-	os.system("cls")
-
-	retrieve_prt = retrieve
-	if auto_time_warp:
-		auto_time_warp_prt = "yes"
-	else:
-		auto_time_warp_prt = "no"
-
-	print(f"\nTYPE: {retrieve_prt}\nAUTO TIME-WARP: {auto_time_warp_prt}\n\nPress Alt+X to start/stop\nPress Alt+Y to exit")
-
-	keyboard.wait()
-	"""
 
 
 if __name__ == "__main__":
