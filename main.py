@@ -1,8 +1,8 @@
 import os
+import smtplib
 import sys
 import time
 import tkinter
-import smtplib
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
@@ -10,14 +10,15 @@ from email.mime.text import MIMEText
 from io import BytesIO
 from multiprocessing import Process, freeze_support
 from random import randint
+from tkinter.messagebox import showerror
 
 import cv2
 import keyboard
 import mouse
 import numpy as np
 import psutil
-from PIL import ImageGrab, ImageTk
 from PIL import Image as ImagePIL
+from PIL import ImageGrab, ImageTk
 
 
 def resource_path(relative_path):
@@ -451,7 +452,6 @@ def cast_len_select():
 				wood_texture = wood_texture[:, :width - pasted_width]
 			background_image.paste_image(wood_texture, x_loc=pasted_width, y_loc=0, bgr=True)
 			pasted_width += wood_texture.shape[1]
-
 		del wood_texture
 
 		background_image.paste_image(background_gradient_image.image, x_loc=50, y_loc=20)
@@ -555,7 +555,9 @@ def rods_select_click(event, rods, x_start, box_size, toplevel_win):
 def toggle_btn(widget1, widget2, variable):
 	global started
 	if not started:
-		if not variable:
+		if variable is None:
+			pass
+		elif not variable:
 			widget1.config(background="#2DFA09", activebackground="#2DFA09", highlightthickness=0)
 			widget2.config(background="#2DFA09", activebackground="#2DFA09", highlightthickness=3)
 			widget1.place_configure(y=widget1.winfo_y() + 5, height=widget1.winfo_height() - 10)
@@ -581,12 +583,97 @@ def toggle_auto_time_warp():
 	return not auto_time_warp_toggle
 
 def toggle_status_mails():
+	global root
 	global status_mails_toggle
 	global started
 	if not started:
-		status_mails_toggle = not status_mails_toggle
-	return not status_mails_toggle
-# TODO: add dialog to sign in to gmail
+		if not status_mails_toggle:
+			keyboard.unhook_all_hotkeys()
+
+			width = 450
+			height = 115
+
+			background_image = BackgroundImage(width=width, height=height)
+			wood_texture = cv2.imread(resource_path("run_data\\wood_texture.png"), cv2.IMREAD_UNCHANGED)
+
+			pasted_height = 0
+			while pasted_height < height:
+				if height - (pasted_height + wood_texture.shape[0]) < 0:
+					wood_texture = wood_texture[:height - pasted_height, :]
+				background_image.paste_image(wood_texture, x_loc=0, y_loc=pasted_height, bgr=True)
+				pasted_height += wood_texture.shape[0]
+			pasted_width = 0
+			while pasted_width < width:
+				if width - (pasted_width + wood_texture.shape[1]) < 0:
+					wood_texture = wood_texture[:, :width - pasted_width]
+				background_image.paste_image(wood_texture, x_loc=pasted_width, y_loc=0, bgr=True)
+				pasted_width += wood_texture.shape[1]
+			del wood_texture
+
+			background_image.add_text("Gmail", cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=0, y_loc=12, x_width=width, y_height=25, color="#ffffff")
+			background_image.add_text("E-mail:", cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=0, y_loc=50, x_width=100, y_height=20, color="#ffffff")
+			background_image.add_text("Key:", cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=18, y_loc=82, x_width=100, y_height=20, color="#ffffff")
+
+			background_image.paste_image(cv2.imread(resource_path("run_data\\check-mark.png"), cv2.IMREAD_UNCHANGED), x_loc=width - 38, y_loc=8, bgr=True)
+
+			background_image.generate_tkinter_img()
+
+			select_window = tkinter.Toplevel(root)
+			select_window.title("Gmail sign in!")
+			select_window.geometry(f"{width}x{height}+{(root.winfo_screenwidth() // 2) - (width // 2)}+{(root.winfo_screenheight() // 2) - (height // 2)}")
+			select_window.resizable(False, False)
+			select_window.grab_set()
+			select_window.focus()
+
+			background_lbl = tkinter.Label(select_window, highlightthickness=0, borderwidth=0, image=background_image.image_tkinter)
+			background_lbl.bind("<ButtonRelease-1>", lambda event: close_mail_window(event, width, select_window))
+			background_lbl.place(x=0, y=0, width=width, height=height)
+
+			email_var = tkinter.StringVar(master=select_window, value="")
+			email_entry = tkinter.Entry(select_window, borderwidth=0,
+			                            highlightthickness=2, highlightcolor="#ffffff", highlightbackground="#ffffff",
+			                            background="#4B5555", insertbackground="#ffffff",
+			                            font=("Calibri", 12), foreground="#ffffff",
+			                            justify=tkinter.CENTER,
+			                            textvariable=email_var)
+			email_entry.place(x=95, width=350, y=50, height=25)
+
+			key_var = tkinter.StringVar(master=select_window, value="")
+			key_entry = tkinter.Entry(select_window, borderwidth=0,
+			                          highlightthickness=2, highlightcolor="#ffffff", highlightbackground="#ffffff",
+			                          background="#4B5555", insertbackground="#ffffff",
+			                          show="*", font=("Calibri", 12), foreground="#ffffff",
+			                          justify=tkinter.CENTER,
+			                          textvariable=key_var)
+			key_entry.place(x=95, width=350, y=82, height=25)
+
+			select_window.iconbitmap(resource_path("run_data\\fish_icon.ico"))
+			select_window.wait_window()
+
+			if check_mail(email_var.get().strip(" "), key_var.get()):
+				status_mails_toggle = not status_mails_toggle
+				keyboard.add_hotkey(hotkey, start, suppress=True, trigger_on_release=True)
+				return not status_mails_toggle
+			else:
+				showerror(title="Error!", message="Couldn't sign in to Gmail!", parent=root)
+				keyboard.add_hotkey(hotkey, start, suppress=True, trigger_on_release=True)
+				return None
+		else:
+			status_mails_toggle = not status_mails_toggle
+			return not status_mails_toggle
+
+def close_mail_window(event, width, window):
+	if event.x >= (width - 50) and event.y <= 50:
+		window.destroy()
+
+def check_mail(e_mail, key):
+	global email
+	email = Gmail(e_mail=e_mail, key=key)
+	if email.verify_credentials():
+		return True
+	else:
+		email = None
+		return False
 
 class BackgroundImage:
 	def __init__(self, width, height):
@@ -754,26 +841,19 @@ class Gmail:
 
 def main():
 	global started
-
 	global root
-
 	global background_image, background_label
-
 	global retrieve, cast_len, num_of_rods
-
 	global night_toggle, auto_time_warp_toggle, status_mails_toggle
 	global night_toggle_1, night_toggle_2
 	global auto_time_warp_toggle_1, auto_time_warp_toggle_2
 	global status_mails_toggle_1, status_mails_toggle_2
-
 	global retrieve_types
-
 	global hotkey
+	global email
 
-	# TODO: add little status circle (if bot is running or not)
-
+	email = None
 	started = False
-
 	retrieve_types = ["Twitching",
 	                  "Stop&Go",
 	                  "Lift&Drop",
@@ -783,7 +863,6 @@ def main():
 	                  "Walking",
 	                  "Float",
 	                  "Bottom"]
-
 	retrieve = retrieve_types[4]
 	cast_len = 100
 	num_of_rods = 1
