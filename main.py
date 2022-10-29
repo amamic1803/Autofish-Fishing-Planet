@@ -239,6 +239,7 @@ def action(retrieve, cast_len, num_of_rods, night_toggle, auto_time_warp_toggle,
 		line_length = checks("lineLen")
 
 		# TODO: release fish with fine
+		# TODO: solve float and bottom
 
 		if line_length == 0:
 			fish_hooked = False
