@@ -82,7 +82,6 @@ def checks(tip):
 	global full_val_low, full_val_high
 	#global bluetension_val_low, bluetension_val_high
 	#global bluefish_val_low, bluefish_val_high
-	global images_lure
 	global image_close_orange
 	global image_close_gray
 	global image_extend_orange
@@ -94,16 +93,6 @@ def checks(tip):
 	match tip:
 		case "float-state":
 			pass
-		case "fish-hooked-lure":
-			lowest_values = []
-			captured_img = cv2.cvtColor(np.array(ImageGrab.grab(bbox=(1681, 200, 1851, 363))), cv2.COLOR_RGB2GRAY)
-			for image in images_lure:
-				lowest_values.append(cv2.minMaxLoc(cv2.matchTemplate(captured_img, image, cv2.TM_SQDIFF))[0])
-			print(min(lowest_values))
-			if min(lowest_values) <= 6_000_000:
-				return False
-			else:
-				return True
 		case "full":
 			screen_load = ImageGrab.grab().load()
 			for i in range(162, 200):
@@ -282,22 +271,20 @@ def action(retrieve, cast_len, num_of_rods, night_toggle, auto_time_warp_toggle,
 			mouse.press(button="left")
 			time.sleep(1)
 		else:
-			if not checks("fish-hooked-lure"):  # fish not hooked
-				match retrieve:
-					case "Float":
-						match checks("float-state"):
-							case "wait":
-								time.sleep(0.75)
-							case "bite":
-								motions("Twitching")
-							case "empty":
-								motions("Twitching")
-					case "Bottom":
-						pass
-					case _:
-						motions(retrieve)
-			else:  # fish hooked -> reeling using twitching
-				motions("Twitching")
+			# TODO: reel-in if fish is hooked
+			match retrieve:
+				case "Float":
+					match checks("float-state"):
+						case "wait":
+							time.sleep(0.75)
+						case "bite":
+							motions("Twitching")
+						case "empty":
+							motions("Twitching")
+				case "Bottom":
+					pass
+				case _:
+					motions(retrieve)
 
 def start():
 	global started
@@ -351,12 +338,6 @@ def load_data():
 	# bobber_val_low = (142, 8, 8)
 	# bobber_val_high = (215, 165, 165)
 	"""
-
-	global images_lure
-	images_lure = [cv2.imread(resource_path("run_data\\lure_0.png"), cv2.IMREAD_GRAYSCALE)]
-	for i in ("L", "R"):
-		for j in range(5, 36, 5):
-			images_lure.append(cv2.imread(resource_path(f"run_data\\lure_{j}{i}.png"), cv2.IMREAD_GRAYSCALE))
 
 	global images_digits
 	images_digits = []
@@ -448,7 +429,7 @@ def retrieve_select():
 		background_lbl.place(x=0, y=0, width=width, height=height)
 		background_lbl.bind("<ButtonRelease-1>", lambda event: retrieve_select_click(event, option_height, retrieve_types, select_window))
 
-		select_window.iconbitmap(resource_path("run_data\\fish_icon.ico"))
+		select_window.iconbitmap(resource_path("data\\fish_icon.ico"))
 		select_window.wait_window()
 		keyboard.add_hotkey(hotkey, start, suppress=True, trigger_on_release=True)
 
@@ -513,7 +494,7 @@ def cast_len_select():
 		background_lbl.place(x=0, y=0, width=width, height=height)
 		background_lbl.bind("<ButtonRelease-1>", lambda event: cast_len_select_click(event, 50, 350, select_window))
 
-		select_window.iconbitmap(resource_path("run_data\\fish_icon.ico"))
+		select_window.iconbitmap(resource_path("data\\fish_icon.ico"))
 		select_window.wait_window()
 		keyboard.add_hotkey(hotkey, start, suppress=True, trigger_on_release=True)
 
@@ -569,7 +550,7 @@ def rods_select():
 		background_lbl.place(x=0, y=0, width=width, height=height)
 		background_lbl.bind("<ButtonRelease-1>", lambda event: rods_select_click(event, rods, ((width - (height * rods)) // 2), height, select_window))
 
-		select_window.iconbitmap(resource_path("run_data\\fish_icon.ico"))
+		select_window.iconbitmap(resource_path("data\\fish_icon.ico"))
 		select_window.wait_window()
 		keyboard.add_hotkey(hotkey, start, suppress=True, trigger_on_release=True)
 
@@ -686,7 +667,7 @@ def toggle_status_mails():
 			                          textvariable=key_var)
 			key_entry.place(x=95, width=350, y=82, height=25)
 
-			select_window.iconbitmap(resource_path("run_data\\fish_icon.ico"))
+			select_window.iconbitmap(resource_path("data\\fish_icon.ico"))
 			select_window.wait_window()
 
 			if_tick_click = tick_click
@@ -994,7 +975,7 @@ def main():
 
 	background_label.bind("<ButtonRelease-1>", background_click)
 
-	root.iconbitmap(resource_path("run_data\\fish_icon.ico"))  # putting at end to prevent flash while starting (adding icon draws window immediately, before all other elements are drawn)
+	root.iconbitmap(resource_path("data\\fish_icon.ico"))  # putting at end to prevent flash while starting (adding icon draws window immediately, before all other elements are drawn)
 	root.mainloop()
 
 	# shut down everything
