@@ -1,4 +1,4 @@
-# not currently in use
+# not used
 
 import pytesseract
 from PIL import Image

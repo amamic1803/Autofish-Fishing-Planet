@@ -34,6 +34,12 @@ def hex_to_rgb(hex_value):
 	hex_value = hex_value.lstrip("#")
 	return tuple(int(hex_value[i:i + 2], 16) for i in (0, 2, 4))
 
+def rotate_image(image, angle):
+	image_center = tuple(np.array(image.shape[1::-1]) / 2)
+	rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
+	result = cv2.warpAffine(image, rot_mat, image.shape[1::-1], flags=cv2.INTER_LINEAR)
+	return result
+
 def motions(tip):
 	match tip:
 		case "Twitching":
@@ -45,15 +51,24 @@ def motions(tip):
 			time.sleep(0.65)
 		case "Stop&Go":
 			mouse.press(button="left")
-			time.sleep(2)
+			time.sleep(1.425)
 			mouse.release(button="left")
-			time.sleep(0.5)
+			time.sleep(0.45)
 		case "Lift&Drop":
-			pass
+			mouse.press(button="left")
+			time.sleep(1.75)
+			mouse.release(button="left")
+			time.sleep(0.25)
+			mouse.press(button="right")
+			time.sleep(0.25)
+			mouse.release(button="right")
+			time.sleep(0.25)
 		case "Straight":
-			pass
+			mouse.press(button="left")
+			time.sleep(1)
 		case "Straight & Slow":
-			pass
+			mouse.press(button="left")
+			time.sleep(1)
 		case "Popping":
 			pass
 		case "Walking":
@@ -65,8 +80,9 @@ def motions(tip):
 
 def checks(tip):
 	global full_val_low, full_val_high
-	global bluetension_val_low, bluetension_val_high
-	global bluefish_val_low, bluefish_val_high
+	#global bluetension_val_low, bluetension_val_high
+	#global bluefish_val_low, bluefish_val_high
+	global images_lure
 	global image_close_orange
 	global image_close_gray
 	global image_extend_orange
@@ -77,13 +93,17 @@ def checks(tip):
 
 	match tip:
 		case "float-state":
-			screen_load = ImageGrab.grab().load()
-			for i in range(162, 200):
-				if (full_val_low[0] <= screen_load[88, i][0] <= full_val_high[0]) and (full_val_low[1] <= screen_load[88, i][1] <= full_val_high[1]) and (full_val_low[2] <= screen_load[88, i][2] <= full_val_high[2]):
-					return True
-			return False
-		case "fish-hooked":
 			pass
+		case "fish-hooked-lure":
+			lowest_values = []
+			captured_img = cv2.cvtColor(np.array(ImageGrab.grab(bbox=(1681, 200, 1851, 363))), cv2.COLOR_RGB2GRAY)
+			for image in images_lure:
+				lowest_values.append(cv2.minMaxLoc(cv2.matchTemplate(captured_img, image, cv2.TM_SQDIFF))[0])
+			print(min(lowest_values))
+			if min(lowest_values) <= 6_000_000:
+				return False
+			else:
+				return True
 		case "full":
 			screen_load = ImageGrab.grab().load()
 			for i in range(162, 200):
@@ -234,7 +254,6 @@ def warp(auto_time_warp, night, status_mails, e_mail_client):
 
 def action(retrieve, cast_len, num_of_rods, night_toggle, auto_time_warp_toggle, status_mails_toggle, email):
 	load_data()
-	fish_hooked = False
 	while psutil.Process(os.getpid()).parent() is not None:
 		line_length = checks("lineLen")
 
@@ -242,11 +261,8 @@ def action(retrieve, cast_len, num_of_rods, night_toggle, auto_time_warp_toggle,
 		# TODO: solve float and bottom
 
 		if line_length == 0:
-			fish_hooked = False
-			if mouse.is_pressed(button="left"):
-				mouse.release(button="left")
-			if mouse.is_pressed(button="right"):
-				mouse.release(button="right")
+			mouse.release(button="left")
+			mouse.release(button="right")
 			time.sleep(3)
 
 			checks("aftReIn")
@@ -258,33 +274,30 @@ def action(retrieve, cast_len, num_of_rods, night_toggle, auto_time_warp_toggle,
 			else:
 				# cast
 				mouse.press(button="left")
-				time.sleep(0.72 + ((1.1 * cast_len) / 100))
+				time.sleep(0.8575 + ((1.1 * cast_len) / 100))
 				mouse.release(button="left")
-				time.sleep(12)
+				time.sleep(8 + ((4 * cast_len) / 100))
 		elif line_length <= 5:
 			# reel in slower if 5 meters or less
 			mouse.press(button="left")
 			time.sleep(1)
 		else:
-			if not fish_hooked:
-				if checks("fish-hooked"):
-					fish_hooked = True
-				else:
-					match retrieve:
-						case "Float":
-							match checks("float-state"):
-								case "wait":
-									time.sleep(0.75)
-								case "bite":
-									motions("Twitching")
-								case "empty":
-									motions("Twitching")
-						case "Bottom":
-							pass
-						case _:
-							motions(retrieve)
-			else:
-				motions("Twitching")  # using twitching as the most effective method of reeling in fish
+			if not checks("fish-hooked-lure"):  # fish not hooked
+				match retrieve:
+					case "Float":
+						match checks("float-state"):
+							case "wait":
+								time.sleep(0.75)
+							case "bite":
+								motions("Twitching")
+							case "empty":
+								motions("Twitching")
+					case "Bottom":
+						pass
+					case _:
+						motions(retrieve)
+			else:  # fish hooked -> reeling using twitching
+				motions("Twitching")
 
 def start():
 	global started
@@ -316,10 +329,8 @@ def start():
 		background_image.generate_tkinter_img()
 		background_label.configure(image=background_image.image_tkinter)
 
-		if mouse.is_pressed(button="left"):
-			mouse.release(button="left")
-		if mouse.is_pressed(button="right"):
-			mouse.release(button="right")
+		mouse.release(button="left")
+		mouse.release(button="right")
 
 		started = False
 
@@ -328,18 +339,24 @@ def load_data():
 	full_val_low = (250, 185, 0)
 	full_val_high = (260, 195, 5)
 
-	global bluetension_val_low, bluetension_val_high
-	bluetension_val_low = (25, 50, 170)
-	bluetension_val_high = (55, 80, 200)
+	#global bluetension_val_low, bluetension_val_high
+	#bluetension_val_low = (25, 50, 170)
+	#bluetension_val_high = (55, 80, 200)
 
-	global bluefish_val_low, bluefish_val_high
-	bluefish_val_low = (40, 40, 120)
-	bluefish_val_high = (70, 70, 170)
+	#global bluefish_val_low, bluefish_val_high
+	#bluefish_val_low = (40, 40, 120)
+	#bluefish_val_high = (70, 70, 170)
 
 	"""
 	# bobber_val_low = (142, 8, 8)
 	# bobber_val_high = (215, 165, 165)
 	"""
+
+	global images_lure
+	images_lure = [cv2.imread(resource_path("run_data\\lure_0.png"), cv2.IMREAD_GRAYSCALE)]
+	for i in ("L", "R"):
+		for j in range(5, 36, 5):
+			images_lure.append(cv2.imread(resource_path(f"run_data\\lure_{j}{i}.png"), cv2.IMREAD_GRAYSCALE))
 
 	global images_digits
 	images_digits = []
@@ -895,7 +912,7 @@ def main():
 	                  "Walking",
 	                  "Float",
 	                  "Bottom"]
-	retrieve = retrieve_types[4]
+	retrieve = retrieve_types[0]
 	cast_len = 100
 	num_of_rods = 1
 	night_toggle = False
@@ -986,12 +1003,10 @@ def main():
 		process_action.kill()
 		process_action.join()
 		process_action.close()
+		mouse.release(button="left")
+		mouse.release(button="right")
 	except (NameError, ValueError):
 		pass
-	if mouse.is_pressed(button="left"):
-		mouse.release(button="left")
-	if mouse.is_pressed(button="right"):
-		mouse.release(button="right")
 
 
 if __name__ == "__main__":
