@@ -21,6 +21,8 @@ from PIL import Image as ImagePIL
 from PIL import ImageGrab, ImageTk
 
 
+# General use functions
+
 def resource_path(relative_path):
 	""" Get absolute path to resource, works for dev and for PyInstaller """
 	try:
@@ -31,16 +33,15 @@ def resource_path(relative_path):
 	return os.path.join(base_path, relative_path)
 
 def hex_to_rgb(hex_value):
+	""" Convert color from HEX to RGB value """
 	hex_value = hex_value.lstrip("#")
 	return tuple(int(hex_value[i:i + 2], 16) for i in (0, 2, 4))
 
-def rotate_image(image, angle):
-	image_center = tuple(np.array(image.shape[1::-1]) / 2)
-	rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
-	result = cv2.warpAffine(image, rot_mat, image.shape[1::-1], flags=cv2.INTER_LINEAR)
-	return result
+
+# Fishing bot functions
 
 def motions(tip):
+	""" Collection of moves for fishing """
 	match tip:
 		case "Twitching":
 			mouse.press(button="left")
@@ -70,18 +71,29 @@ def motions(tip):
 			mouse.press(button="left")
 			time.sleep(1)
 		case "Popping":
-			pass
+			mouse.press(button="left")
+			mouse.press(button="right")
+			time.sleep(0.5)
+			mouse.release(button="left")
+			mouse.release(button="right")
+			time.sleep(1.4)
 		case "Walking":
-			pass
+			mouse.press(button="left")
+			mouse.press(button="right")
+			time.sleep(0.25)
+			mouse.release(button="left")
+			mouse.release(button="right")
+			time.sleep(0.85)
 		case "Float":
 			pass
 		case "Bottom":
 			pass
 
 def checks(tip):
+	""" Collection of screen vision check while fishing """
+
 	global full_val_low, full_val_high
-	#global bluetension_val_low, bluetension_val_high
-	#global bluefish_val_low, bluefish_val_high
+	global bluefish_val_low, bluefish_val_high
 	global image_close_orange
 	global image_close_gray
 	global image_extend_orange
@@ -134,6 +146,12 @@ def checks(tip):
 				mouse.click(button="left")
 				return True
 			return False
+		case "hookedfish":
+			screen_load = ImageGrab.grab(bbox=(1631, 794, 1632, 795)).load()
+			if (bluefish_val_low[0] <= screen_load[0, 0][0] <= bluefish_val_high[0]) and (bluefish_val_low[1] <= screen_load[0, 0][1] <= bluefish_val_high[1]) and (bluefish_val_low[2] <= screen_load[0, 0][2] <= bluefish_val_high[2]):
+				return True
+			else:
+				return False
 		case "caughtfish":
 			img = cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY)
 			rel = cv2.minMaxLoc(cv2.matchTemplate(img, image_release_gray, cv2.TM_SQDIFF))
@@ -219,10 +237,13 @@ def checks(tip):
 						znamenka = j[0]
 				broj += str(znamenka)
 			if broj == "":
-				broj = "0"
-			return int(broj)
+				return broj
+			else:
+				return int(broj)
 
 def warp(auto_time_warp, night, status_mails, e_mail_client):
+	""" Warps fishing time """
+
 	# TODO: warp function
 	global image_next_morning_gray
 	keyboard.press_and_release("t")
@@ -241,20 +262,69 @@ def warp(auto_time_warp, night, status_mails, e_mail_client):
 		# send_gmail(my_address=values.email_address, my_password=values.email_password, my_server=values.email_server, to_address=values.email_recipient, subject="Fishing-Planet-Autofisher: Manual time-warp", body="Keepnet is full!\nAwaiting manual time-warp!", screenshot=True)
 		psutil.Process(os.getpid()).kill()
 
+def load_data():
+	""" Loads data used by bot process """
+
+	global full_val_low, full_val_high
+	full_val_low = (250, 185, 0)
+	full_val_high = (260, 195, 5)
+
+	global bluefish_val_low, bluefish_val_high
+	bluefish_val_low = (27, 67, 193)
+	bluefish_val_high = (37, 77, 203)
+
+	global images_digits
+	images_digits = []
+	for i in range(10):
+		for j in ("", "_dark"):
+			images_digits.append(cv2.imread(resource_path(f"run_data\\{i}{j}.png"), cv2.IMREAD_GRAYSCALE))
+
+	global image_claim_green
+	image_claim_green = cv2.imread(resource_path(r"run_data/claim_green.png"), cv2.IMREAD_GRAYSCALE)
+
+	global image_close_gray
+	image_close_gray = cv2.imread(resource_path(r"run_data/close_gray.png"), cv2.IMREAD_GRAYSCALE)
+
+	global image_close_orange
+	image_close_orange = cv2.imread(resource_path(r"run_data/close_orange.png"), cv2.IMREAD_GRAYSCALE)
+
+	global image_discard_gray
+	image_discard_gray = cv2.imread(resource_path(r"run_data/discard_gray.png"), cv2.IMREAD_GRAYSCALE)
+
+	global image_extend_orange
+	image_extend_orange = cv2.imread(resource_path(r"run_data/extend_orange.png"), cv2.IMREAD_GRAYSCALE)
+
+	global image_keep_orange
+	image_keep_orange = cv2.imread(resource_path(r"run_data/keep_orange.png"), cv2.IMREAD_GRAYSCALE)
+
+	global image_next_morning_gray
+	image_next_morning_gray = cv2.imread(resource_path(r"run_data/next_morning_gray.png"), cv2.IMREAD_GRAYSCALE)
+
+	global image_ok_orange
+	image_ok_orange = cv2.imread(resource_path(r"run_data/ok_orange.png"), cv2.IMREAD_GRAYSCALE)
+
+	global image_release_gray
+	image_release_gray = cv2.imread(resource_path(r"run_data/release_gray.png"), cv2.IMREAD_GRAYSCALE)
+
 def action(retrieve, cast_len, num_of_rods, night_toggle, auto_time_warp_toggle, status_mails_toggle, email):
+	""" Main bot logic (process) """
+
 	load_data()
+	fish_hooked = checks("hookedfish")
 	while psutil.Process(os.getpid()).parent() is not None:
 		line_length = checks("lineLen")
 
 		# TODO: release fish with fine
-		# TODO: solve float and bottom
 
-		if line_length == 0:
+		if line_length == "":  # can't detect line length on screen, wait
+			time.sleep(1.5)
+		elif line_length == 0:  # line length is zero, check for caught fish, received achievements, ..., cast again
 			mouse.release(button="left")
 			mouse.release(button="right")
 			time.sleep(3)
 
 			checks("aftReIn")
+			fish_hooked = False
 
 			# TODO: check for rod damage, change rod
 
@@ -271,22 +341,30 @@ def action(retrieve, cast_len, num_of_rods, night_toggle, auto_time_warp_toggle,
 			mouse.press(button="left")
 			time.sleep(1)
 		else:
-			# TODO: reel-in if fish is hooked
-			match retrieve:
-				case "Float":
-					match checks("float-state"):
-						case "wait":
-							time.sleep(0.75)
-						case "bite":
-							motions("Twitching")
-						case "empty":
-							motions("Twitching")
-				case "Bottom":
-					pass
-				case _:
-					motions(retrieve)
+			if not fish_hooked:  # if fish was not hooked in current cast, check if it is hooked now
+				fish_hooked = checks("hookedfish")
+
+			if fish_hooked:  # if fish was hooked in the current cast, reel in using twitching (it is most effective for reeling in fish)
+				motions("Twitching")
+			else:
+				# TODO: implement float and bottom fishing
+				match retrieve:
+					case "Float":
+						match checks("float-state"):
+							case "wait":
+								time.sleep(0.75)
+							case "bite":
+								motions("Twitching")
+							case "empty":
+								motions("Twitching")
+					case "Bottom":
+						pass
+					case _:
+						motions(retrieve)
 
 def start():
+	""" Starts/stops bot process, edits GUI accordingly"""
+
 	global started
 	global process_action
 	global root, background_image, background_label
@@ -321,56 +399,8 @@ def start():
 
 		started = False
 
-def load_data():
-	global full_val_low, full_val_high
-	full_val_low = (250, 185, 0)
-	full_val_high = (260, 195, 5)
 
-	#global bluetension_val_low, bluetension_val_high
-	#bluetension_val_low = (25, 50, 170)
-	#bluetension_val_high = (55, 80, 200)
-
-	#global bluefish_val_low, bluefish_val_high
-	#bluefish_val_low = (40, 40, 120)
-	#bluefish_val_high = (70, 70, 170)
-
-	"""
-	# bobber_val_low = (142, 8, 8)
-	# bobber_val_high = (215, 165, 165)
-	"""
-
-	global images_digits
-	images_digits = []
-	for i in range(10):
-		for j in ("", "_dark"):
-			images_digits.append(cv2.imread(resource_path(f"run_data\\{i}{j}.png"), cv2.IMREAD_GRAYSCALE))
-
-	global image_claim_green
-	image_claim_green = cv2.imread(resource_path(r"run_data/claim_green.png"), cv2.IMREAD_GRAYSCALE)
-
-	global image_close_gray
-	image_close_gray = cv2.imread(resource_path(r"run_data/close_gray.png"), cv2.IMREAD_GRAYSCALE)
-
-	global image_close_orange
-	image_close_orange = cv2.imread(resource_path(r"run_data/close_orange.png"), cv2.IMREAD_GRAYSCALE)
-
-	global image_discard_gray
-	image_discard_gray = cv2.imread(resource_path(r"run_data/discard_gray.png"), cv2.IMREAD_GRAYSCALE)
-
-	global image_extend_orange
-	image_extend_orange = cv2.imread(resource_path(r"run_data/extend_orange.png"), cv2.IMREAD_GRAYSCALE)
-
-	global image_keep_orange
-	image_keep_orange = cv2.imread(resource_path(r"run_data/keep_orange.png"), cv2.IMREAD_GRAYSCALE)
-
-	global image_next_morning_gray
-	image_next_morning_gray = cv2.imread(resource_path(r"run_data/next_morning_gray.png"), cv2.IMREAD_GRAYSCALE)
-
-	global image_ok_orange
-	image_ok_orange = cv2.imread(resource_path(r"run_data/ok_orange.png"), cv2.IMREAD_GRAYSCALE)
-
-	global image_release_gray
-	image_release_gray = cv2.imread(resource_path(r"run_data/release_gray.png"), cv2.IMREAD_GRAYSCALE)
+# GUI functions
 
 def background_click(event):
 	global started
@@ -868,6 +898,9 @@ class Gmail:
 			        smtplib.SMTPNotSupportedError,
 			        smtplib.SMTPAuthenticationError):
 				return False
+
+
+# main function
 
 def main():
 	global started
