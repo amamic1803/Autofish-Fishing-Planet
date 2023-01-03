@@ -1,4 +1,4 @@
-# not used
+# not used in the end
 
 import pytesseract
 from PIL import Image
