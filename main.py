@@ -1,3 +1,4 @@
+import json
 import os
 import smtplib
 import sys
@@ -90,112 +91,83 @@ def motions(tip):
 			pass
 
 def checks(tip):
-	""" Collection of screen vision check while fishing """
+	""" Collection of screen vision checks while fishing """
 
-	global full_val_low, full_val_high
-	global bluefish_val_low, bluefish_val_high
-	global image_close_orange
-	global image_close_gray
-	global image_extend_orange
-	global image_ok_orange
-	global image_claim_green
-	global image_release_gray, image_discard_gray, image_keep_orange
-	global images_digits
+	global bot_data
 
 	match tip:
 		case "float-state":
 			pass
-		case "full":
+		case "fullkeepnet":
 			screen_load = ImageGrab.grab().load()
 			for i in range(162, 200):
-				if (full_val_low[0] <= screen_load[88, i][0] <= full_val_high[0]) and (full_val_low[1] <= screen_load[88, i][1] <= full_val_high[1]) and (full_val_low[2] <= screen_load[88, i][2] <= full_val_high[2]):
+				if ((bot_data["values"]["fullkeepnet_orange"]["low"][0] <= screen_load[88, i][0] <= bot_data["values"]["fullkeepnet_orange"]["high"][0]) and
+					(bot_data["values"]["fullkeepnet_orange"]["low"][1] <= screen_load[88, i][1] <= bot_data["values"]["fullkeepnet_orange"]["high"][1]) and
+					(bot_data["values"]["fullkeepnet_orange"]["low"][2] <= screen_load[88, i][2] <= bot_data["values"]["fullkeepnet_orange"]["high"][2])):
 					return True
-			return False
-		case "close-orange":
-			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), image_close_orange, cv2.TM_SQDIFF))
-			if inf[0] <= 1000000:
-				mouse.move(inf[2][0], inf[2][1], absolute=True, duration=0)
-				mouse.click(button="left")
-				return True
-			return False
-		case "close-gray":
-			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), image_close_gray, cv2.TM_SQDIFF))
-			if inf[0] <= 1000000:
-				mouse.move(inf[2][0], inf[2][1], absolute=True, duration=0)
-				mouse.click(button="left")
-				return True
-			return False
-		case "extend":
-			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), image_extend_orange, cv2.TM_SQDIFF))
-			if inf[0] <= 1000000:
-				mouse.move(inf[2][0], inf[2][1], absolute=True, duration=0)
-				mouse.click(button="left")
-				return True
-			return False
-		case "ok":
-			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), image_ok_orange, cv2.TM_SQDIFF))
-			if inf[0] <= 1000000:
-				mouse.move(inf[2][0], inf[2][1], absolute=True, duration=0)
-				mouse.click(button="left")
-				return True
-			return False
-		case "claim":
-			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), image_claim_green, cv2.TM_SQDIFF))
-			if inf[0] <= 1000000:
-				mouse.move(inf[2][0], inf[2][1], absolute=True, duration=0)
-				mouse.click(button="left")
-				return True
 			return False
 		case "hookedfish":
 			screen_load = ImageGrab.grab(bbox=(1631, 794, 1632, 795)).load()
-			if (bluefish_val_low[0] <= screen_load[0, 0][0] <= bluefish_val_high[0]) and (bluefish_val_low[1] <= screen_load[0, 0][1] <= bluefish_val_high[1]) and (bluefish_val_low[2] <= screen_load[0, 0][2] <= bluefish_val_high[2]):
+			if ((bot_data["values"]["hookedfish_blue"]["low"][0] <= screen_load[0, 0][0] <= bot_data["values"]["hookedfish_blue"]["high"][0]) and
+				(bot_data["values"]["hookedfish_blue"]["low"][1] <= screen_load[0, 0][1] <= bot_data["values"]["hookedfish_blue"]["high"][1]) and
+				(bot_data["values"]["hookedfish_blue"]["low"][2] <= screen_load[0, 0][2] <= bot_data["values"]["hookedfish_blue"]["high"][2])):
 				return True
 			else:
 				return False
-		case "caughtfish":
+		case "caught_fish":
 			img = cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY)
-			rel = cv2.minMaxLoc(cv2.matchTemplate(img, image_release_gray, cv2.TM_SQDIFF))
-			disc = cv2.minMaxLoc(cv2.matchTemplate(img, image_discard_gray, cv2.TM_SQDIFF))
-			keep = cv2.minMaxLoc(cv2.matchTemplate(img, image_keep_orange, cv2.TM_SQDIFF))
+
+			disc = cv2.minMaxLoc(cv2.matchTemplate(img, bot_data["images"]["caught_fish"]["discard"], cv2.TM_SQDIFF))
 			if disc[0] <= 1000000:
 				mouse.move(disc[2][0], disc[2][1], absolute=True, duration=0)
 				mouse.click(button="left")
 				time.sleep(2)
 				return True
-			elif keep[0] <= 1000000:
+
+			keep = cv2.minMaxLoc(cv2.matchTemplate(img, bot_data["images"]["caught_fish"]["keep"], cv2.TM_SQDIFF))
+			if keep[0] <= 1000000:
 				mouse.move(keep[2][0], keep[2][1], absolute=True, duration=0)
 				mouse.click(button="left")
 				time.sleep(2)
 				return True
-			elif rel[0] <= 1000000:
+
+			rel = cv2.minMaxLoc(cv2.matchTemplate(img, bot_data["images"]["caught_fish"]["release"], cv2.TM_SQDIFF))
+			if rel[0] <= 1000000:
 				mouse.move(rel[2][0], rel[2][1], absolute=True, duration=0)
 				mouse.click(button="left")
 				time.sleep(2)
 				return True
+
 			return False
-		case "aftReIn":
+		case "pop_ups":
+			ret_changes = False
+			changes = True
+			while changes:
+				changes = False
+				for image in bot_data["images"]["pop_ups"]:
+					inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), image, cv2.TM_SQDIFF))
+					if inf[0] <= 1000000:
+						mouse.move(inf[2][0], inf[2][1], absolute=True, duration=0)
+						mouse.click(button="left")
+						changes = True
+						ret_changes = True
+						time.sleep(2)
+						break
+			return ret_changes
+		case "after_reel_in":
 			while True:
-				if checks("caughtfish"):
-					pass
-				elif checks("close-orange"):
-					pass
-				elif checks("close-gray"):
-					pass
-				elif checks("extend"):
-					pass
-				elif checks("ok"):
-					pass
-				elif checks("claim"):
-					pass
+				if checks("caught_fish"):
+					time.sleep(2)
+				elif checks("pop_ups"):
+					time.sleep(2)
 				else:
 					break
-				time.sleep(2)
 		case "lineLen":
 			cv_img = cv2.cvtColor(np.array(ImageGrab.grab(bbox=(1423, 916, 1666, 1020))), cv2.COLOR_RGB2GRAY)
 			poz_u_znam = {}
-			digits_variations = len(images_digits) // 10
-			for i in range(len(images_digits)):
-				result = cv2.matchTemplate(cv_img, images_digits[i], cv2.TM_SQDIFF)
+			digits_variations = len(bot_data["images"]["digits"]) // 10
+			for i in range(len(bot_data["images"]["digits"])):
+				result = cv2.matchTemplate(cv_img, bot_data["images"]["digits"][i], cv2.TM_SQDIFF)
 				pozicije = np.where(result <= 11500000)
 				pozicije_x = pozicije[1]
 				pozicije_y = pozicije[0]
@@ -245,13 +217,13 @@ def warp(auto_time_warp, night, status_mails, e_mail_client):
 	""" Warps fishing time """
 
 	# TODO: warp function
-	global image_next_morning_gray
+	global bot_data
 	keyboard.press_and_release("t")
 	time.sleep(3)
 	if auto_time_warp:
 		while True:
 			time.sleep(1)
-			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), image_next_morning_gray, cv2.TM_SQDIFF))
+			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), bot_data["images"]["time_warp"]["next_morning_gray"], cv2.TM_SQDIFF))
 			if inf[0] <= 1000000:
 				mouse.move(inf[2][0], inf[2][1], absolute=True, duration=0)
 				mouse.click(button="left")
@@ -265,46 +237,38 @@ def warp(auto_time_warp, night, status_mails, e_mail_client):
 def load_data():
 	""" Loads data used by bot process """
 
-	global full_val_low, full_val_high
-	full_val_low = (250, 185, 0)
-	full_val_high = (260, 195, 5)
+	global bot_data
 
-	global bluefish_val_low, bluefish_val_high
-	bluefish_val_low = (27, 67, 193)
-	bluefish_val_high = (37, 77, 203)
+	bot_data = dict()
 
-	global images_digits
-	images_digits = []
+	with open(resource_path("run_data/values.json"), "r") as file:
+		bot_data["values"] = json.loads(file.read())
+
+	bot_data["images"] = {}
+
+	bot_data["images"]["digits"] = []
 	for i in range(10):
 		for j in ("", "_dark"):
-			images_digits.append(cv2.imread(resource_path(f"run_data\\{i}{j}.png"), cv2.IMREAD_GRAYSCALE))
+			bot_data["images"]["digits"].append(cv2.imread(resource_path(f"run_data\\images\\cv_templates\\digits\\{i}{j}.png"), cv2.IMREAD_GRAYSCALE))
 
-	global image_claim_green
-	image_claim_green = cv2.imread(resource_path(r"run_data/claim_green.png"), cv2.IMREAD_GRAYSCALE)
+	bot_data["images"]["pop_ups"] = [
+		cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/claim_green.png"), cv2.IMREAD_GRAYSCALE),
+		cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/close_gray.png"), cv2.IMREAD_GRAYSCALE),
+		cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/close_orange.png"), cv2.IMREAD_GRAYSCALE),
+		cv2.imread(resource_path("run_data/images/cv_templates/pop_ups/close_orange_2.png"), cv2.IMREAD_GRAYSCALE),
+		cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/extend_orange.png"), cv2.IMREAD_GRAYSCALE),
+		cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/ok_orange.png"), cv2.IMREAD_GRAYSCALE)
+	]
 
-	global image_close_gray
-	image_close_gray = cv2.imread(resource_path(r"run_data/close_gray.png"), cv2.IMREAD_GRAYSCALE)
+	bot_data["images"]["caught_fish"] = {
+		"discard": cv2.imread(resource_path(r"run_data/images/cv_templates/caught_fish/discard_gray.png"), cv2.IMREAD_GRAYSCALE),
+		"keep": cv2.imread(resource_path(r"run_data/images/cv_templates/caught_fish/keep_orange.png"), cv2.IMREAD_GRAYSCALE),
+		"release": cv2.imread(resource_path(r"run_data/images/cv_templates/caught_fish/release_gray.png"), cv2.IMREAD_GRAYSCALE)
+	}
 
-	global image_close_orange
-	image_close_orange = cv2.imread(resource_path(r"run_data/close_orange.png"), cv2.IMREAD_GRAYSCALE)
-
-	global image_discard_gray
-	image_discard_gray = cv2.imread(resource_path(r"run_data/discard_gray.png"), cv2.IMREAD_GRAYSCALE)
-
-	global image_extend_orange
-	image_extend_orange = cv2.imread(resource_path(r"run_data/extend_orange.png"), cv2.IMREAD_GRAYSCALE)
-
-	global image_keep_orange
-	image_keep_orange = cv2.imread(resource_path(r"run_data/keep_orange.png"), cv2.IMREAD_GRAYSCALE)
-
-	global image_next_morning_gray
-	image_next_morning_gray = cv2.imread(resource_path(r"run_data/next_morning_gray.png"), cv2.IMREAD_GRAYSCALE)
-
-	global image_ok_orange
-	image_ok_orange = cv2.imread(resource_path(r"run_data/ok_orange.png"), cv2.IMREAD_GRAYSCALE)
-
-	global image_release_gray
-	image_release_gray = cv2.imread(resource_path(r"run_data/release_gray.png"), cv2.IMREAD_GRAYSCALE)
+	bot_data["images"]["time_warp"] = {
+		"next_morning_gray": cv2.imread(resource_path(r"run_data/images/cv_templates/time_warp/next_morning_gray.png"), cv2.IMREAD_GRAYSCALE)
+	}
 
 def action(retrieve, cast_len, num_of_rods, night_toggle, auto_time_warp_toggle, status_mails_toggle, email):
 	""" Main bot logic (process) """
@@ -317,18 +281,19 @@ def action(retrieve, cast_len, num_of_rods, night_toggle, auto_time_warp_toggle,
 		# TODO: release fish with fine
 
 		if line_length == "":  # can't detect line length on screen, wait
-			time.sleep(1.5)
+			time.sleep(2)
+			checks("after_reel_in")
 		elif line_length == 0:  # line length is zero, check for caught fish, received achievements, ..., cast again
 			mouse.release(button="left")
 			mouse.release(button="right")
 			time.sleep(3)
 
-			checks("aftReIn")
+			checks("after_reel_in")
 			fish_hooked = False
 
 			# TODO: check for rod damage, change rod
 
-			if checks("full"):  # TODO: warp by time of day, not only full keepnet
+			if checks("fullkeepnet"):  # TODO: warp by time of day, not only full keepnet
 				warp(auto_time_warp_toggle, night_toggle, status_mails_toggle, email)
 			else:
 				# cast
@@ -434,7 +399,7 @@ def retrieve_select():
 		height = option_height * len(retrieve_types)
 
 		background_image = BackgroundImage(width=width, height=height)
-		wood_texture = cv2.imread(resource_path("run_data\\wood_texture.png"), cv2.IMREAD_UNCHANGED)
+		wood_texture = cv2.imread(resource_path("run_data/images/gui_elements/wood_texture.png"), cv2.IMREAD_UNCHANGED)
 		pasted_height = 0
 		while pasted_height < height:
 			if height - (pasted_height + wood_texture.shape[0]) < 0:
@@ -485,7 +450,7 @@ def cast_len_select():
 		background_gradient_image.generate_gradient(starting_color="#38A0B2", ending_color="#B9B63D")
 
 		background_image = BackgroundImage(width=width, height=height)
-		wood_texture = cv2.imread(resource_path("run_data\\wood_texture.png"), cv2.IMREAD_UNCHANGED)
+		wood_texture = cv2.imread(resource_path("run_data/images/gui_elements/wood_texture.png"), cv2.IMREAD_UNCHANGED)
 
 		pasted_height = 0
 		while pasted_height < height:
@@ -555,7 +520,7 @@ def rods_select():
 		rods = 7
 
 		background_image = BackgroundImage(width=width, height=height)
-		wood_texture = cv2.imread(resource_path("run_data\\wood_texture.png"), cv2.IMREAD_UNCHANGED)
+		wood_texture = cv2.imread(resource_path("run_data/images/gui_elements/wood_texture.png"), cv2.IMREAD_UNCHANGED)
 		pasted_height = 0
 		while pasted_height < height:
 			if height - (pasted_height + wood_texture.shape[0]) < 0:
@@ -643,7 +608,7 @@ def toggle_status_mails():
 			height = 115
 
 			background_image = BackgroundImage(width=width, height=height)
-			wood_texture = cv2.imread(resource_path("run_data\\wood_texture.png"), cv2.IMREAD_UNCHANGED)
+			wood_texture = cv2.imread(resource_path("run_data/images/gui_elements/wood_texture.png"), cv2.IMREAD_UNCHANGED)
 
 			pasted_height = 0
 			while pasted_height < height:
@@ -663,8 +628,8 @@ def toggle_status_mails():
 			background_image.add_text("E-mail:", cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=0, y_loc=50, x_width=100, y_height=20, color="#ffffff")
 			background_image.add_text("Key:", cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=18, y_loc=82, x_width=100, y_height=20, color="#ffffff")
 
-			background_image.paste_image(cv2.imread(resource_path("run_data\\check-mark.png"), cv2.IMREAD_UNCHANGED), x_loc=width - 38, y_loc=8, bgr=True)
-			background_image.paste_image(cv2.imread(resource_path("run_data\\question-mark.png"), cv2.IMREAD_UNCHANGED), x_loc=5, y_loc=5, bgr=True)
+			background_image.paste_image(cv2.imread(resource_path("run_data/images/gui_elements/check_mark.png"), cv2.IMREAD_UNCHANGED), x_loc=width - 38, y_loc=8, bgr=True)
+			background_image.paste_image(cv2.imread(resource_path("run_data/images/gui_elements/question_mark.png"), cv2.IMREAD_UNCHANGED), x_loc=5, y_loc=5, bgr=True)
 
 			background_image.generate_tkinter_img()
 
@@ -943,10 +908,10 @@ def main():
 
 	background_image = BackgroundImage(width, height)
 	background_image.generate_gradient(starting_color="#008DBF", ending_color="#087E31", do_vertical=True)
-	background_image.paste_image(cv2.imread(resource_path("run_data/fish_logo.png"), cv2.IMREAD_UNCHANGED), x_loc=15, y_loc=15)
-	background_image.paste_image(cv2.imread(resource_path("run_data/pencil.png"), cv2.IMREAD_UNCHANGED), x_loc=15, y_loc=126)
-	background_image.paste_image(cv2.imread(resource_path("run_data/pencil.png"), cv2.IMREAD_UNCHANGED), x_loc=15, y_loc=166)
-	background_image.paste_image(cv2.imread(resource_path("run_data/pencil.png"), cv2.IMREAD_UNCHANGED), x_loc=15, y_loc=206)
+	background_image.paste_image(cv2.imread(resource_path("run_data/images/gui_elements/fish_logo.png"), cv2.IMREAD_UNCHANGED), x_loc=15, y_loc=15)
+	background_image.paste_image(cv2.imread(resource_path("run_data/images/gui_elements/pencil.png"), cv2.IMREAD_UNCHANGED), x_loc=15, y_loc=126)
+	background_image.paste_image(cv2.imread(resource_path("run_data/images/gui_elements/pencil.png"), cv2.IMREAD_UNCHANGED), x_loc=15, y_loc=166)
+	background_image.paste_image(cv2.imread(resource_path("run_data/images/gui_elements/pencil.png"), cv2.IMREAD_UNCHANGED), x_loc=15, y_loc=206)
 	background_image.add_text("Autofish-Fishing-Planet", cv2.FONT_HERSHEY_SCRIPT_COMPLEX, text_thickness=1, x_loc=90, y_loc=0, x_width=width - 90, y_height=100, color="#ffffff")
 	background_image.add_text("START/STOP: Alt+X", cv2.FONT_HERSHEY_DUPLEX, text_thickness=1, x_loc=0, y_loc=height - 25, x_width=width, y_height=15, color="#ffffff")
 	background_image.add_text("Retrieve:", cv2.FONT_HERSHEY_SCRIPT_COMPLEX, text_thickness=1, x_loc=15, y_loc=120, x_width=175, y_height=25, color="#ffffff")
