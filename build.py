@@ -75,7 +75,7 @@ def main():
 	onefile = True
 	uac_admin = False
 	icon = "data/fish_icon.ico"
-	upx = "data\\upx.exe"
+	upx = "data\\upx-4.0.2-win64\\upx.exe"
 	files = [icon]
 	folders = ["run_data"]
 
