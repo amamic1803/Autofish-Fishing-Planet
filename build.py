@@ -70,11 +70,11 @@ def build(name, console, onefile, uac_admin, icon, upx, files, folders):
 	shutil.rmtree(path=work_path, ignore_errors=True)
 
 def main():
-	name = "Autofish_v1.0.0"
+	name = "Autofish_v0.1.0"
 	console = False
 	onefile = True
 	uac_admin = False
-	icon = "data/fish_icon.ico"
+	icon = "data\\fish_icon.ico"
 	upx = "data\\upx-4.0.2-win64\\upx.exe"
 	files = [icon]
 	folders = ["run_data"]
