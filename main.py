@@ -254,6 +254,7 @@ def load_data():
 	bot_data["images"]["pop_ups"] = [
 		cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/claim_green.png"), cv2.IMREAD_GRAYSCALE),
 		cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/close_gray.png"), cv2.IMREAD_GRAYSCALE),
+		cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/close_gray_2.png"), cv2.IMREAD_GRAYSCALE),
 		cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/close_orange.png"), cv2.IMREAD_GRAYSCALE),
 		cv2.imread(resource_path("run_data/images/cv_templates/pop_ups/close_orange_2.png"), cv2.IMREAD_GRAYSCALE),
 		cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/extend_orange.png"), cv2.IMREAD_GRAYSCALE),
