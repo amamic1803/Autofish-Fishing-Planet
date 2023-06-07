@@ -1,0 +1,86 @@
+name: Lint
+
+on: push
+
+permissions:
+  actions: write
+  contents: read
+  packages: read
+
+jobs:
+  lint-ruff:
+    name: Lint with Ruff
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      name: Checkout repository
+
+    - uses: chartboost/ruff-action@v1
+      name: Run Ruff
+      with:
+        args: |
+          --ignore E101
+          --ignore E501
+
+  call-release:
+    name: Call release (opt)
+    runs-on: ubuntu-latest
+    needs: lint-ruff
+
+    steps:
+    - uses: actions/checkout@v3
+      name: Checkout repository
+
+    - uses: actions/setup-python@v4
+      name: Install Python
+      with:
+        python-version: '3.11'
+
+    - name: Install requirements
+      run: pip install -r requirements.txt
+
+    - name: Get version
+      id: get_version
+      run: |
+        VERSION_NUM=$(python build.py --version)
+        echo "VERSION_NUM=${VERSION_NUM}" >> $GITHUB_OUTPUT
+
+    - name: Check commit message
+      id: check_commit_message
+      run: |
+        commit_message="${{ github.event.head_commit.message }}"
+        word1_found=false
+        word2_found=false
+        if echo "$commit_message" | grep -q -i "release"; then
+          word1_found=true
+        fi
+        if echo "$commit_message" | grep -q -i "v${{ steps.get_version.outputs.VERSION_NUM }}"; then
+          word2_found=true
+        fi
+        if [[ $word1_found == true && $word2_found == true ]]; then
+          echo "words_found=true" >> $GITHUB_OUTPUT
+        else
+          echo "words_found=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Call release workflow
+      uses: actions/github-script@v6
+      if: steps.check_commit_message.outputs.words_found == 'true'
+      with:
+        script: |
+          const owner = context.repo.owner;
+          const repo = context.repo.repo;
+          const workflow_id = 'release.yml';
+          const ref = context.ref;
+          const sha = context.sha;
+          
+          github.rest.actions.createWorkflowDispatch({
+            owner: owner,
+            repo: repo,
+            workflow_id: 'release.yml',
+            ref: ref,
+            inputs: {
+              sha: sha
+            },
+          });

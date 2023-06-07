@@ -1,0 +1,150 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'SHA of the commit to release'
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  discussions: write
+  packages: read
+
+jobs:
+  build-windows:
+    name: Build Windows binary
+    runs-on: windows-latest
+
+    steps:
+    - name: Get current SHA
+      id: current_sha
+      shell: bash
+      run: |
+        supplied_sha=${{ github.event.inputs.sha }}
+        
+        if [ -z "$supplied_sha" ]; then
+          echo "No SHA supplied, using caller commit SHA:"
+          echo "$GITHUB_SHA"
+          echo "SHA=$GITHUB_SHA" >> $GITHUB_OUTPUT
+        else
+          echo "SHA supplied, using:"
+          echo "$supplied_sha"
+          echo "SHA=$supplied_sha" >> $GITHUB_OUTPUT
+        fi
+
+    - uses: actions/checkout@v3
+      name: Checkout repository
+      with:
+        ref: ${{ steps.current_sha.outputs.SHA }}
+
+    - uses: actions/setup-python@v4
+      name: Install Python
+      with:
+        python-version: '3.11'
+
+    - name: Install requirements
+      run: pip install -r requirements.txt
+
+    - name: Install UPX
+      uses: crazy-max/ghaction-upx@v2
+      with:
+        install-only: true
+
+    - name: Get version
+      shell: bash
+      id: get_version
+      run: |
+        VERSION_NUM=$(python build.py --version)
+        echo "VERSION_NUM=${VERSION_NUM}" >> $GITHUB_OUTPUT
+
+    - name: Package binary
+      run: python build.py
+
+    - name: Rename binary
+      shell: bash
+      run: mv "${{ github.event.repository.name }}-v${{ steps.get_version.outputs.VERSION_NUM }}.exe" "${{ github.event.repository.name }}-v${{ steps.get_version.outputs.VERSION_NUM }}-windows-x86_64.exe"
+
+    - uses: actions/upload-artifact@v3
+      name: Upload binary artifact
+      with:
+          name: windows-binary
+          retention-days: 3
+          path: "${{ github.event.repository.name }}-v${{ steps.get_version.outputs.VERSION_NUM }}-windows-x86_64.exe"
+
+  publish-release:
+    name: Publish GitHub release
+    runs-on: ubuntu-latest
+    needs: build-windows
+
+    steps:
+    - name: Get current SHA
+      id: current_sha
+      run: |
+        supplied_sha=${{ github.event.inputs.sha }}
+        
+        if [ -z "$supplied_sha" ]; then
+          echo "No SHA supplied, using caller commit SHA:"
+          echo "$GITHUB_SHA"
+          echo "SHA=$GITHUB_SHA" >> $GITHUB_OUTPUT
+        else
+          echo "SHA supplied, using:"
+          echo "$supplied_sha"
+          echo "SHA=$supplied_sha" >> $GITHUB_OUTPUT
+        fi
+
+    - uses: actions/checkout@v3
+      name: Checkout repository
+      with:
+        ref: ${{ steps.current_sha.outputs.SHA }}
+
+    - uses: actions/setup-python@v4
+      name: Install Python
+      with:
+        python-version: '3.11'
+
+    - name: Install requirements
+      run: pip install -r requirements.txt
+
+    - name: Get version
+      id: get_version
+      run: |
+        VERSION_NUM=$(python build.py --version)
+        echo "VERSION_NUM=${VERSION_NUM}" >> $GITHUB_OUTPUT
+
+    - name: Create binary folders
+      run: mkdir -p windows-binary
+
+    - name: Download Windows binary
+      uses: actions/download-artifact@v3
+      with:
+          name: windows-binary
+          path: windows-binary
+
+    - uses: mukunku/tag-exists-action@v1.2.0
+      name: Check if this version was already released
+      id: checkTag
+      with:
+        tag: 'v${{ steps.get_version.outputs.VERSION_NUM }}'
+
+    - name: Terminate if this version was already released
+      if: steps.checkTag.outputs.exists == 'true'
+      run: |
+        echo "v${{ steps.get_version.outputs.VERSION_NUM }} was already released!" >&2
+        exit 1
+
+    - name: Create release
+      uses: softprops/action-gh-release@v1
+      with:
+        body: |
+          ### **_${{ github.event.repository.name }}-v${{ steps.get_version.outputs.VERSION_NUM }}_**
+        draft: false
+        prerelease: false
+        files: |
+          windows-binary/${{ github.event.repository.name }}-v${{ steps.get_version.outputs.VERSION_NUM }}-windows-x86_64.exe
+        name: v${{ steps.get_version.outputs.VERSION_NUM }}
+        tag_name: v${{ steps.get_version.outputs.VERSION_NUM }}
+        fail_on_unmatched_files: true
+        token: ${{ secrets.GITHUB_TOKEN }}

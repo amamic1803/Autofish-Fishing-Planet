@@ -1,12 +1,12 @@
-import datetime
 import os
 import random
 import shutil
+import sys
 
 import PyInstaller.__main__
 
 
-def build(name, console, onefile, uac_admin, icon, upx, files, folders):
+def build(name, console, onefile, uac_admin, icon, files, folders):
 	work_path = "build"
 	while os.path.isdir(work_path):
 		work_path = f"build_{random.randint(1, 1_000_000_000)}"
@@ -14,10 +14,13 @@ def build(name, console, onefile, uac_admin, icon, upx, files, folders):
 
 	result_path = os.path.abspath(".")
 
+	if os.path.isfile(os.path.join(result_path, f"{name}.exe")):
+		os.remove(os.path.join(result_path, f"{name}.exe"))
+
 	run_list = ['main.py',
 	            '--noconfirm',
 	            '--clean',
-	            '--name', f"{name}_{datetime.datetime.now().strftime('%Y-%m-%d_%H.%M.%S')}",
+	            '--name', name,
 	            '--workpath', work_path,
 	            '--specpath', work_path,
 	            '--distpath', result_path]
@@ -42,13 +45,6 @@ def build(name, console, onefile, uac_admin, icon, upx, files, folders):
 		else:
 			run_list.extend(('--icon', icon_path))
 
-	if upx != "":
-		if not os.path.isfile(upx):
-			raise Exception("Invalid UPX!")
-		else:
-			upx_path = os.path.join(os.path.abspath("."), os.path.dirname(upx))
-			run_list.extend(('--upx-dir', upx_path))
-
 	for file in files:
 		if os.path.isfile(os.path.join(os.path.abspath("."), file)):
 			run_list.extend(('--add-data', f'{os.path.join(os.path.abspath("."), file)};{os.path.dirname(file)}'))
@@ -70,16 +66,23 @@ def build(name, console, onefile, uac_admin, icon, upx, files, folders):
 	shutil.rmtree(path=work_path, ignore_errors=True)
 
 def main():
-	name = "Autofish_v0.1.1"
+	name = "Autofish"
+	version = "0.1.1"
+
+	name = f"{name}_v{version}"
+
 	console = False
 	onefile = True
 	uac_admin = False
 	icon = "data\\fish_icon.ico"
-	upx = "data\\upx-4.0.2-win64\\upx.exe"
+
 	files = [icon]
 	folders = ["run_data"]
 
-	build(name, console, onefile, uac_admin, icon, upx, files, folders)
+	if len(sys.argv) > 1 and sys.argv[1] == "--version":
+		print(version)
+	else:
+		build(name, console, onefile, uac_admin, icon, files, folders)
 
 
 if __name__ == '__main__':
