@@ -68,6 +68,7 @@ def build(name, console, onefile, uac_admin, icon, files, folders):
 def main():
 	name = "Autofish"
 	version = "0.1.1"
+	# test comment
 
 	name = f"{name}_v{version}"
 
