@@ -60,7 +60,7 @@ jobs:
         NAME=$(python build.py --name)
         VERSION=$(python build.py --version)
         echo "NAME=${NAME}" >> $GITHUB_OUTPUT
-        echo "VERSION_NUM=${VERSION}" >> $GITHUB_OUTPUT
+        echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
 
     - name: Package binary
       run: python build.py
@@ -117,7 +117,7 @@ jobs:
         NAME=$(python build.py --name)
         VERSION=$(python build.py --version)
         echo "NAME=${NAME}" >> $GITHUB_OUTPUT
-        echo "VERSION_NUM=${VERSION}" >> $GITHUB_OUTPUT
+        echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
 
     - name: Create binary folders
       run: mkdir -p windows-binary

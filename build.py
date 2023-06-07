@@ -70,8 +70,6 @@ def main():
 	version = "0.1.1"
 	# test comment
 
-	name = f"{name}_v{version}"
-
 	console = False
 	onefile = True
 	uac_admin = False
@@ -85,6 +83,7 @@ def main():
 	elif len(sys.argv) > 1 and sys.argv[1] == "--name":
 		print(name)
 	else:
+		name = f"{name}_v{version}"
 		build(name, console, onefile, uac_admin, icon, files, folders)
 
 
