@@ -53,26 +53,28 @@ jobs:
       with:
         install-only: true
 
-    - name: Get version
+    - name: Get name and version
       shell: bash
-      id: get_version
+      id: get_info
       run: |
-        VERSION_NUM=$(python build.py --version)
-        echo "VERSION_NUM=${VERSION_NUM}" >> $GITHUB_OUTPUT
+        NAME=$(python build.py --name)
+        VERSION=$(python build.py --version)
+        echo "NAME=${NAME}" >> $GITHUB_OUTPUT
+        echo "VERSION_NUM=${VERSION}" >> $GITHUB_OUTPUT
 
     - name: Package binary
       run: python build.py
 
     - name: Rename binary
       shell: bash
-      run: mv "${{ github.event.repository.name }}-v${{ steps.get_version.outputs.VERSION_NUM }}.exe" "${{ github.event.repository.name }}-v${{ steps.get_version.outputs.VERSION_NUM }}-windows-x86_64.exe"
+      run: mv "${{ steps.get_info.outputs.NAME }}-v${{ steps.get_info.outputs.VERSION }}.exe" "${{ steps.get_info.outputs.NAME }}-v${{ steps.get_info.outputs.VERSION }}-windows-x86_64.exe"
 
     - uses: actions/upload-artifact@v3
       name: Upload binary artifact
       with:
           name: windows-binary
           retention-days: 3
-          path: "${{ github.event.repository.name }}-v${{ steps.get_version.outputs.VERSION_NUM }}-windows-x86_64.exe"
+          path: "${{ steps.get_info.outputs.NAME }}-v${{ steps.get_info.outputs.VERSION }}-windows-x86_64.exe"
 
   publish-release:
     name: Publish GitHub release
@@ -95,24 +97,27 @@ jobs:
           echo "SHA=$supplied_sha" >> $GITHUB_OUTPUT
         fi
 
-    - uses: actions/checkout@v3
-      name: Checkout repository
+    - name: Checkout repository
+      uses: actions/checkout@v3
       with:
         ref: ${{ steps.current_sha.outputs.SHA }}
 
-    - uses: actions/setup-python@v4
-      name: Install Python
+    - name: Install Python
+      uses: actions/setup-python@v4
       with:
         python-version: '3.11'
 
     - name: Install requirements
       run: pip install -r requirements.txt
 
-    - name: Get version
-      id: get_version
+    - name: Get name and version
+      shell: bash
+      id: get_info
       run: |
-        VERSION_NUM=$(python build.py --version)
-        echo "VERSION_NUM=${VERSION_NUM}" >> $GITHUB_OUTPUT
+        NAME=$(python build.py --name)
+        VERSION=$(python build.py --version)
+        echo "NAME=${NAME}" >> $GITHUB_OUTPUT
+        echo "VERSION_NUM=${VERSION}" >> $GITHUB_OUTPUT
 
     - name: Create binary folders
       run: mkdir -p windows-binary
@@ -127,24 +132,24 @@ jobs:
       name: Check if this version was already released
       id: checkTag
       with:
-        tag: 'v${{ steps.get_version.outputs.VERSION_NUM }}'
+        tag: 'v${{ steps.get_info.outputs.VERSION }}'
 
     - name: Terminate if this version was already released
       if: steps.checkTag.outputs.exists == 'true'
       run: |
-        echo "v${{ steps.get_version.outputs.VERSION_NUM }} was already released!" >&2
+        echo "v${{ steps.get_info.outputs.VERSION }} was already released!" >&2
         exit 1
 
     - name: Create release
       uses: softprops/action-gh-release@v1
       with:
         body: |
-          ### **_${{ github.event.repository.name }}-v${{ steps.get_version.outputs.VERSION_NUM }}_**
+          ### **_${{ steps.get_info.outputs.NAME }}-v${{ steps.get_info.outputs.VERSION }}_**
         draft: false
         prerelease: false
         files: |
-          windows-binary/${{ github.event.repository.name }}-v${{ steps.get_version.outputs.VERSION_NUM }}-windows-x86_64.exe
-        name: v${{ steps.get_version.outputs.VERSION_NUM }}
-        tag_name: v${{ steps.get_version.outputs.VERSION_NUM }}
+          windows-binary/${{ steps.get_info.outputs.NAME }}-v${{ steps.get_info.outputs.VERSION }}-windows-x86_64.exe
+        name: v${{ steps.get_info.outputs.VERSION }}
+        tag_name: v${{ steps.get_info.outputs.VERSION }}
         fail_on_unmatched_files: true
         token: ${{ secrets.GITHUB_TOKEN }}

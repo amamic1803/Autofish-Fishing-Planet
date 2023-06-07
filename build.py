@@ -82,6 +82,8 @@ def main():
 
 	if len(sys.argv) > 1 and sys.argv[1] == "--version":
 		print(version)
+	elif len(sys.argv) > 1 and sys.argv[1] == "--name":
+		print(name)
 	else:
 		build(name, console, onefile, uac_admin, icon, files, folders)
 
