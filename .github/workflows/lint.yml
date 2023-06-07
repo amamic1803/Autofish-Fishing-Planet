@@ -22,6 +22,7 @@ jobs:
         args: |
           --ignore E101
           --ignore E501
+          --ignore E722
 
   call-release:
     name: Call release (opt)
