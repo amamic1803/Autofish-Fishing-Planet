@@ -83,7 +83,7 @@ def main():
 	elif len(sys.argv) > 1 and sys.argv[1] == "--name":
 		print(name)
 	else:
-		name = f"{name}_v{version}"
+		name = f"{name}-v{version}"
 		build(name, console, onefile, uac_admin, icon, files, folders)
 
 
