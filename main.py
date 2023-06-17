@@ -144,7 +144,7 @@ def checks(tip):
 			changes = True
 			while changes:
 				changes = False
-				for image in bot_data["images"]["pop_ups"]:
+				for image in bot_data["images"]["pop_ups"]["list"]:
 					inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), image, cv2.TM_SQDIFF))
 					if inf[0] <= 1000000:
 						mouse.move(inf[2][0], inf[2][1], absolute=True, duration=0)
@@ -153,6 +153,18 @@ def checks(tip):
 						ret_changes = True
 						time.sleep(2)
 						break
+				if changes:
+					continue
+				# buy
+				inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), bot_data["images"]["pop_ups"]["buy"][0], cv2.TM_SQDIFF))
+				if inf[0] <= 1_000_000:
+					inf2 = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), bot_data["images"]["pop_ups"]["buy"][1], cv2.TM_SQDIFF))
+					shape = np.shape(bot_data["images"]["pop_ups"]["buy"][1])
+					mouse.move(inf2[2][0] + shape[1] // 2, inf2[2][1] + shape[0] // 2, absolute=True, duration=0)
+					mouse.click(button="left")
+					changes = True
+					ret_changes = True
+					time.sleep(2)
 			return ret_changes
 		case "after_reel_in":
 			while True:
@@ -251,15 +263,21 @@ def load_data():
 		for j in ("", "_dark"):
 			bot_data["images"]["digits"].append(cv2.imread(resource_path(f"run_data\\images\\cv_templates\\digits\\{i}{j}.png"), cv2.IMREAD_GRAYSCALE))
 
-	bot_data["images"]["pop_ups"] = [
-		cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/claim_green.png"), cv2.IMREAD_GRAYSCALE),
-		cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/close_gray.png"), cv2.IMREAD_GRAYSCALE),
-		cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/close_gray_2.png"), cv2.IMREAD_GRAYSCALE),
-		cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/close_orange.png"), cv2.IMREAD_GRAYSCALE),
-		cv2.imread(resource_path("run_data/images/cv_templates/pop_ups/close_orange_2.png"), cv2.IMREAD_GRAYSCALE),
-		cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/extend_orange.png"), cv2.IMREAD_GRAYSCALE),
-		cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/ok_orange.png"), cv2.IMREAD_GRAYSCALE)
-	]
+	bot_data["images"]["pop_ups"] = {
+		"list": [
+			cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/claim_green.png"), cv2.IMREAD_GRAYSCALE),
+			cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/close_gray.png"), cv2.IMREAD_GRAYSCALE),
+			cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/close_gray_2.png"), cv2.IMREAD_GRAYSCALE),
+			cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/close_orange.png"), cv2.IMREAD_GRAYSCALE),
+			cv2.imread(resource_path("run_data/images/cv_templates/pop_ups/close_orange_2.png"), cv2.IMREAD_GRAYSCALE),
+			cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/extend_orange.png"), cv2.IMREAD_GRAYSCALE),
+			cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/ok_orange.png"), cv2.IMREAD_GRAYSCALE)
+		],
+		"buy": [
+			cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/buy_orange.png"), cv2.IMREAD_GRAYSCALE),
+			cv2.imread(resource_path(r"run_data/images/cv_templates/pop_ups/x.png"), cv2.IMREAD_GRAYSCALE),
+		],
+	}
 
 	bot_data["images"]["caught_fish"] = {
 		"discard": cv2.imread(resource_path(r"run_data/images/cv_templates/caught_fish/discard_gray.png"), cv2.IMREAD_GRAYSCALE),
