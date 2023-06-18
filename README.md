@@ -13,6 +13,9 @@ A fishing bot for automatically catching fish in **Fishing Planet**
 - Resolution
   - [x] 1920x1080
   - [ ] other
+- Languages
+  - [x] English
+  - [ ] other
 - Fishing
   - retrieves
     - [x] spinning
