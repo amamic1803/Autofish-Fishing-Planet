@@ -225,7 +225,7 @@ def checks(tip):
 			else:
 				return int(broj)
 
-def warp(auto_time_warp, night, status_mails, e_mail_client):
+def warp(auto_time_warp, night):
 	""" Warps fishing time """
 
 	# TODO: warp function
@@ -234,7 +234,7 @@ def warp(auto_time_warp, night, status_mails, e_mail_client):
 	time.sleep(3)
 	if auto_time_warp:
 		while True:
-			time.sleep(1)
+			time.sleep(3)
 			inf = cv2.minMaxLoc(cv2.matchTemplate(cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_RGB2GRAY), bot_data["images"]["time_warp"]["next_morning_gray"], cv2.TM_SQDIFF))
 			if inf[0] <= 1000000:
 				mouse.move(inf[2][0], inf[2][1], absolute=True, duration=0)
@@ -242,8 +242,6 @@ def warp(auto_time_warp, night, status_mails, e_mail_client):
 				time.sleep(5)
 				break
 	else:
-
-		# send_gmail(my_address=values.email_address, my_password=values.email_password, my_server=values.email_server, to_address=values.email_recipient, subject="Fishing-Planet-Autofisher: Manual time-warp", body="Keepnet is full!\nAwaiting manual time-warp!", screenshot=True)
 		psutil.Process(os.getpid()).kill()
 
 def load_data():
@@ -313,7 +311,9 @@ def action(retrieve, cast_len, num_of_rods, night_toggle, auto_time_warp_toggle,
 			# TODO: check for rod damage, change rod
 
 			if checks("fullkeepnet"):  # TODO: warp by time of day, not only full keepnet
-				warp(auto_time_warp_toggle, night_toggle, status_mails_toggle, email)
+				warp(auto_time_warp_toggle, night_toggle)
+				if status_mails_toggle:
+					email.send_gmail(to=email.my_e_mail, subject="Autofish - full keepnet", message="The Autofish bot has filled a keepnet/stringer!", screenshot=True)
 			else:
 				# cast
 				mouse.press(button="left")
