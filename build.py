@@ -67,15 +67,15 @@ def build(name, console, onefile, uac_admin, icon, files, folders):
 
 def main():
 	name = "Autofish"
-	version = "0.1.5"
+	version = "0.1.6"
 
 	console = False
 	onefile = True
 	uac_admin = False
-	icon = "data\\fish_icon.ico"
+	icon = "resources\\fish_icon.ico"
 
-	files = [icon]
-	folders = ["run_data"]
+	files = []
+	folders = ["resources"]
 
 	if len(sys.argv) > 1 and sys.argv[1] == "--version":
 		print(version)

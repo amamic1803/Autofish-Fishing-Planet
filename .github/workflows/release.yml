@@ -2,11 +2,6 @@ name: Release
 
 on:
   workflow_dispatch:
-    inputs:
-      sha:
-        description: 'SHA of the commit to release'
-        required: false
-        default: ""
 
 permissions:
   contents: write
@@ -15,35 +10,20 @@ permissions:
 
 jobs:
   build-windows:
-    name: Build Windows binary
+    name: Build (Windows)
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
 
     steps:
-    - name: Get current SHA
-      id: current_sha
-      shell: bash
-      run: |
-        supplied_sha=${{ github.event.inputs.sha }}
-        
-        if [ -z "$supplied_sha" ]; then
-          echo "No SHA supplied, using caller commit SHA:"
-          echo "$GITHUB_SHA"
-          echo "SHA=$GITHUB_SHA" >> $GITHUB_OUTPUT
-        else
-          echo "SHA supplied, using:"
-          echo "$supplied_sha"
-          echo "SHA=$supplied_sha" >> $GITHUB_OUTPUT
-        fi
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-    - uses: actions/checkout@v3
-      name: Checkout repository
+    - name: Install Python
+      uses: actions/setup-python@v4
       with:
-        ref: ${{ steps.current_sha.outputs.SHA }}
-
-    - uses: actions/setup-python@v4
-      name: Install Python
-      with:
-        python-version: '3.11'
+        python-version: '3.12'
 
     - name: Install requirements
       run: pip install -r requirements.txt
@@ -54,7 +34,6 @@ jobs:
         install-only: true
 
     - name: Get name and version
-      shell: bash
       id: get_info
       run: |
         NAME=$(python build.py --name)
@@ -66,52 +45,36 @@ jobs:
       run: python build.py
 
     - name: Rename binary
-      shell: bash
-      run: mv "${{ steps.get_info.outputs.NAME }}-v${{ steps.get_info.outputs.VERSION }}.exe" "${{ steps.get_info.outputs.NAME }}-v${{ steps.get_info.outputs.VERSION }}-windows-x86_64.exe"
+      run: mv "${{ steps.get_info.outputs.NAME }}-v${{ steps.get_info.outputs.VERSION }}.exe" "${{ steps.get_info.outputs.NAME }}-v${{ steps.get_info.outputs.VERSION }}-win-x86_64.exe"
 
     - uses: actions/upload-artifact@v3
       name: Upload binary artifact
       with:
           name: windows-binary
           retention-days: 3
-          path: "${{ steps.get_info.outputs.NAME }}-v${{ steps.get_info.outputs.VERSION }}-windows-x86_64.exe"
+          path: "${{ steps.get_info.outputs.NAME }}-v${{ steps.get_info.outputs.VERSION }}-win-x86_64.exe"
 
   publish-release:
     name: Publish GitHub release
     runs-on: ubuntu-latest
     needs: build-windows
+    defaults:
+      run:
+        shell: bash
 
     steps:
-    - name: Get current SHA
-      id: current_sha
-      run: |
-        supplied_sha=${{ github.event.inputs.sha }}
-        
-        if [ -z "$supplied_sha" ]; then
-          echo "No SHA supplied, using caller commit SHA:"
-          echo "$GITHUB_SHA"
-          echo "SHA=$GITHUB_SHA" >> $GITHUB_OUTPUT
-        else
-          echo "SHA supplied, using:"
-          echo "$supplied_sha"
-          echo "SHA=$supplied_sha" >> $GITHUB_OUTPUT
-        fi
-
     - name: Checkout repository
       uses: actions/checkout@v3
-      with:
-        ref: ${{ steps.current_sha.outputs.SHA }}
 
     - name: Install Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
+        python-version: '3.12'
 
     - name: Install requirements
       run: pip install -r requirements.txt
 
     - name: Get name and version
-      shell: bash
       id: get_info
       run: |
         NAME=$(python build.py --name)
@@ -148,7 +111,7 @@ jobs:
         draft: false
         prerelease: false
         files: |
-          windows-binary/${{ steps.get_info.outputs.NAME }}-v${{ steps.get_info.outputs.VERSION }}-windows-x86_64.exe
+          windows-binary/${{ steps.get_info.outputs.NAME }}-v${{ steps.get_info.outputs.VERSION }}-win-x86_64.exe
         name: v${{ steps.get_info.outputs.VERSION }}
         tag_name: v${{ steps.get_info.outputs.VERSION }}
         fail_on_unmatched_files: true
