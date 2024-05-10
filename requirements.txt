@@ -1,7 +1,7 @@
-opencv-python==4.8.1.78
+opencv-python>=4.8.1.78
 keyboard>=0.13.5
 mouse>=0.7.1
 numpy>=1.26.2
 psutil>=5.9.6
-Pillow>=10.1.0
+pillow>=10.1.0
 pyinstaller>=6.2.0

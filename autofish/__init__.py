@@ -1,1 +1,5 @@
-from runner import run
+from .gui import App
+
+
+def run():
+	App()

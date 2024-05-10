@@ -1,11 +1,12 @@
 import json
 import os
 import sys
+from typing import List
 
 import cv2
 
 
-def get_filenames(path: str) -> list:
+def get_filenames(path: str) -> List[str]:
 	""" Returns list of filenames in given path """
 
 	filenames = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(f)]
@@ -26,6 +27,19 @@ def resource_path(relative_path: str) -> str:
 # Path to resources folder
 RESOURCES_PATH = resource_path("resources")
 
+# List of possible retrieve types
+RETRIEVE_TYPES = [
+	"Twitching",
+	"Stop&Go",
+	"Lift&Drop",
+	"Straight",
+	"Straight & Slow",
+	"Popping",
+	"Walking",
+	"Float",
+	"Bottom"
+]
+
 
 def load_values() -> dict:
 	""" Loads values used by bot process """
@@ -41,9 +55,9 @@ def load_templates() -> dict:
 	templates = dict()
 
 	templates["digits"] = load_digits()
-	templates["popups"] = load_popups()
-	templates["offers"] = load_offers()
 	templates["fish"] = load_fish()
+	templates["offers"] = load_offers()
+	templates["popups"] = load_popups()
 	templates["warp"] = load_warp()
 
 	return templates
@@ -72,7 +86,7 @@ def load_popups() -> list:
 
 	return popups
 
-def load_offers() -> tuple:
+def load_offers() -> list:
 	""" Loads offers used by bot process.
 	Returns tuple of (buy, x) templates.
 	Buy template is used to check if there is a purchase offer.
@@ -86,7 +100,6 @@ def load_offers() -> tuple:
 	offers = []
 	for offer_file in offers_files:
 		offers.append(cv2.imread(offer_file, cv2.IMREAD_GRAYSCALE))
-	offers = tuple(offers)
 
 	return offers
 
