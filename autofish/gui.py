@@ -1,3 +1,4 @@
+import os.path
 import tkinter as tk
 from multiprocessing import Process
 from tkinter.messagebox import showerror, showinfo
@@ -9,6 +10,7 @@ import numpy as np
 from PIL import Image as ImagePIL
 from PIL import ImageTk
 
+from .bot import Bot
 from .gmail import Gmail
 from .load_data import resource_path, RETRIEVE_TYPES
 
@@ -449,12 +451,17 @@ class App:
 		""" Starts/stops bot process, edits GUI accordingly"""
 
 		if not self.started:
+			templates_path = resource_path(f"resources/cv_templates/{self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}")
+			if not os.path.isdir(templates_path):
+				showerror(title="Error!", message="Unsupported screen resolution!", parent=self.root)
+				return
+
 			self.started = True
 			self.background_image.clean_background(x=0, y=self.root.winfo_height() - 20, ind=3)
 			self.background_image.draw_circle((10, self.root.winfo_height() - 10), 3, color="#2DFA09", filled=True)
 			self.background_image.generate_tkinter_img()
 			self.background_label.configure(image=self.background_image.image_tkinter)
-			self.bot_process = Process(target=action, args=(self.retrieve, self.cast_len, self.num_of_rods, self.night_toggle, self.auto_time_warp_toggle, self.status_mails_toggle, self.email))
+			self.bot_process = Process(target=Bot, args=((self.root.winfo_screenwidth(), self.root.winfo_screenheight()), self.retrieve, self.cast_len, self.num_of_rods, self.night_toggle, self.auto_time_warp_toggle, self.status_mails_toggle, self.email))
 			self.bot_process.start()
 		else:
 			try:

@@ -1,26 +1,22 @@
 {
-    "fullkeepnet_orange": {
-        "low": [
-            250,
-            185,
-            0
-        ],
-        "high": [
-            260,
-            195,
-            5
-        ]
+    "full_keepnet_pos": {
+        "1920x1080": {
+            "top_left": [88, 162],
+            "bottom_right": [89, 200]
+        }
     },
-    "hookedfish_blue": {
-        "low": [
-            27,
-            67,
-            193
-        ],
-        "high": [
-            37,
-            77,
-            203
-        ]
+    "full_keepnet_orange": [255, 190, 2],
+    "fish_hooked_pos": {
+        "1920x1080": {
+            "top_left": [1631, 794],
+            "bottom_right": [1632, 795]
+        }
+    },
+    "fish_hooked_blue": [32, 72, 198],
+    "line_length_pos": {
+        "1920x1080": {
+            "top_left": [1423, 916],
+            "bottom_right": [1666, 1020]
+        }
     }
 }

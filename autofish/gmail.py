@@ -38,7 +38,7 @@ class Gmail:
 			        smtplib.SMTPAuthenticationError):
 				return False
 
-	def send_gmail(self, to: str, subject: str = "", body: str = "", file_paths: list = None, byte_streams: list = None, screenshot: bool = False):
+	def send(self, to: str, subject: str = "", body: str = "", file_paths: list = None, byte_streams: list = None, screenshot: bool = False) -> bool:
 		# generating email
 		e_mail = MIMEMultipart()
 		e_mail["From"] = self.my_e_mail

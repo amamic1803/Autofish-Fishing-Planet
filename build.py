@@ -62,8 +62,10 @@ def build(name, console, onefile, uac_admin, icon, files, folders):
 		else:
 			raise Exception("Invalid folder!")
 
-	PyInstaller.__main__.run(run_list)
-	shutil.rmtree(path=work_path, ignore_errors=True)
+	try:
+		PyInstaller.__main__.run(run_list)
+	finally:
+		shutil.rmtree(path=work_path, ignore_errors=True)
 
 def main():
 	name = "Autofish"
