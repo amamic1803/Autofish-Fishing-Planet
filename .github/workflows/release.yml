@@ -18,10 +18,10 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Install Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.12'
 
@@ -47,7 +47,7 @@ jobs:
     - name: Rename binary
       run: mv "${{ steps.get_info.outputs.NAME }}-v${{ steps.get_info.outputs.VERSION }}.exe" "${{ steps.get_info.outputs.NAME }}-v${{ steps.get_info.outputs.VERSION }}-win-x86_64.exe"
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       name: Upload binary artifact
       with:
           name: windows-binary
@@ -64,10 +64,10 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Install Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.12'
 
@@ -86,7 +86,7 @@ jobs:
       run: mkdir -p windows-binary
 
     - name: Download Windows binary
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
           name: windows-binary
           path: windows-binary
