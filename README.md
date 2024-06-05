@@ -1,4 +1,7 @@
 # Autofish-Fishing-Planet
+
+**!!! CAUTION !!!** Fishing planet update 5.0.0 added Denuvo Anti-Cheat which means that this should probably not be used anymore (I'll try to contact devs to check but it is very likely that this is forbidden and could result in a ban).
+
 A fishing bot for automatically catching fish in **Fishing Planet**
 
 ![screenshot](https://user-images.githubusercontent.com/40371578/230413498-eff4c56a-6dcb-4b2d-b30d-50b328c677ca.png)
